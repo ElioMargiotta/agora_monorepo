@@ -76,8 +76,9 @@ const config: HardhatUserConfig = {
       // https://hardhat.org/hardhat-network/#solidity-optimizer-support
       optimizer: {
         enabled: true,
-        runs: 800,
+        runs: 200, // Lower runs = smaller contract size
       },
+      viaIR: true, // Enable IR-based compilation for better optimization
       evmVersion: "cancun",
     },
   },
