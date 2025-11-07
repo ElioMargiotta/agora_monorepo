@@ -1,0 +1,112 @@
+{
+  "_format": "hh-sol-artifact-1",
+  "contractName": "WheelPool",
+  "sourceName": "contracts/WheelPool.sol",
+  "abi": [
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_usdcToken",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "constructor"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "from",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "totalDeposits",
+          "type": "uint256"
+        }
+      ],
+      "name": "DepositRecorded",
+      "type": "event"
+    },
+    {
+      "inputs": [],
+      "name": "balance",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getTotalDeposits",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        }
+      ],
+      "name": "recordDeposit",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "totalDeposits",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "usdcToken",
+      "outputs": [
+        {
+          "internalType": "contract IERC20",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x60a060405234801561000f575f5ffd5b5060405161032838038061032883398101604081905261002e91610099565b6001600160a01b0381166100885760405162461bcd60e51b815260206004820152601760248201527f576865656c506f6f6c3a207a65726f2061646472657373000000000000000000604482015260640160405180910390fd5b6001600160a01b03166080526100c6565b5f602082840312156100a9575f5ffd5b81516001600160a01b03811681146100bf575f5ffd5b9392505050565b6080516102446100e45f395f8181606d015261016101526102445ff3fe608060405234801561000f575f5ffd5b5060043610610064575f3560e01c8063168a48221161004d578063168a4822146100ce5780637d882097146100df578063b69ef8a8146100e7575f5ffd5b806311eac855146100685780631424c182146100b9575b5f5ffd5b61008f7f000000000000000000000000000000000000000000000000000000000000000081565b60405173ffffffffffffffffffffffffffffffffffffffff90911681526020015b60405180910390f35b6100cc6100c73660046101e4565b6100ef565b005b5f545b6040519081526020016100b0565b6100d15f5481565b6100d161014a565b805f5f8282546100ff91906101fb565b90915550505f5460405133917f63746a529035c061c0f4d3d89777a673fe489a291caf751b3a0c40b7c89448a49161013f91858252602082015260400190565b60405180910390a250565b6040516370a0823160e01b81523060048201525f907f000000000000000000000000000000000000000000000000000000000000000073ffffffffffffffffffffffffffffffffffffffff16906370a0823190602401602060405180830381865afa1580156101bb573d5f5f3e3d5ffd5b505050506040513d601f19601f820116820180604052508101906101df9190610220565b905090565b5f602082840312156101f4575f5ffd5b5035919050565b8082018082111561021a57634e487b7160e01b5f52601160045260245ffd5b92915050565b5f60208284031215610230575f5ffd5b505191905056fea164736f6c634300081b000a",
+  "deployedBytecode": "0x608060405234801561000f575f5ffd5b5060043610610064575f3560e01c8063168a48221161004d578063168a4822146100ce5780637d882097146100df578063b69ef8a8146100e7575f5ffd5b806311eac855146100685780631424c182146100b9575b5f5ffd5b61008f7f000000000000000000000000000000000000000000000000000000000000000081565b60405173ffffffffffffffffffffffffffffffffffffffff90911681526020015b60405180910390f35b6100cc6100c73660046101e4565b6100ef565b005b5f545b6040519081526020016100b0565b6100d15f5481565b6100d161014a565b805f5f8282546100ff91906101fb565b90915550505f5460405133917f63746a529035c061c0f4d3d89777a673fe489a291caf751b3a0c40b7c89448a49161013f91858252602082015260400190565b60405180910390a250565b6040516370a0823160e01b81523060048201525f907f000000000000000000000000000000000000000000000000000000000000000073ffffffffffffffffffffffffffffffffffffffff16906370a0823190602401602060405180830381865afa1580156101bb573d5f5f3e3d5ffd5b505050506040513d601f19601f820116820180604052508101906101df9190610220565b905090565b5f602082840312156101f4575f5ffd5b5035919050565b8082018082111561021a57634e487b7160e01b5f52601160045260245ffd5b92915050565b5f60208284031215610230575f5ffd5b505191905056fea164736f6c634300081b000a",
+  "linkReferences": {},
+  "deployedLinkReferences": {}
+}
