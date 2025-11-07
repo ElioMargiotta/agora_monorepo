@@ -1,7 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { OnchainWallet } from '@/components/wallet/OnchainWallet';
-import { ChainSwitcher } from '@/components/wallet/ChainSwitcher';
 
 export function AppNavBar() {
   return (
@@ -16,7 +15,6 @@ export function AppNavBar() {
         </div>
         <div className="flex items-center space-x-2 md:space-x-3">
           <div className="hidden md:flex items-center space-x-3">
-            <ChainSwitcher />
             <ThemeToggle />
           </div>
           <OnchainWallet />

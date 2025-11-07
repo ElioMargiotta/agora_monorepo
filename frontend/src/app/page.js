@@ -1,20 +1,24 @@
 "use client";
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { Hero } from "@/components/landing/Hero";
+import { Features } from "@/components/landing/Features";
+import { HyperliquidStats } from "@/components/landing/HyperliquidStats";
+import { HowItWorks } from "@/components/landing/HowItWorks";
+import { SupportedDexes } from "@/components/landing/SupportedDexes";
+import { Testimonials } from "@/components/landing/Testimonials";
+import { CallToAction } from "@/components/landing/CallToAction";
+import { Footer } from "@/components/landing/Footer";
 
 export default function HomePage() {
-  const router = useRouter();
-  
-  useEffect(() => {
-    router.replace("/app/zama-game");
-  }, [router]);
-
   return (
-    <div className="min-h-screen flex items-center justify-center">
-      <div className="text-center">
-        <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent mx-auto mb-4" />
-        <p>Redirecting to Zama Voting Game...</p>
-      </div>
-    </div>
+    <main className="min-h-screen">
+      <Hero />
+      <Features />
+      <HyperliquidStats />
+      <HowItWorks />
+      <SupportedDexes />
+      <Testimonials />
+      <CallToAction />
+      <Footer />
+    </main>
   );
 }

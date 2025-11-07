@@ -1,9 +1,9 @@
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { DesktopFallback } from '@/components/ui/ComingSoon';
-import { 
-  TrendingUp, 
-  Wallet, 
+import {
+  TrendingUp,
+  Wallet,
   AlertCircle,
   Activity,
   ArrowUpRight,
@@ -99,9 +99,9 @@ export default function DashboardPage() {
           <div className="flex items-center gap-3 p-4 bg-muted/30 rounded-lg">
             <AlertCircle className="h-5 w-5 text-muted-foreground" />
             <div>
-              <p className="font-medium">Connect your wallet</p>
+              <p className="font-medium">Market Update</p>
               <p className="text-sm text-muted-foreground">
-                View personalized data and start tracking funding opportunities
+                ETH funding rates are trending upward. Connect your wallet above to track opportunities.
               </p>
             </div>
           </div>

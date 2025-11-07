@@ -4,25 +4,21 @@ import {
   ConnectWallet,
   Wallet,
   WalletDropdown,
-  WalletDropdownBasename,
   WalletDropdownDisconnect,
-  WalletDropdownFundLink,
-  WalletDropdownLink,
 } from '@coinbase/onchainkit/wallet';
-import { 
+import {
   Address,
   Avatar,
   Name,
   Identity,
-  EthBalance 
+  EthBalance
 } from '@coinbase/onchainkit/identity';
 
 export default function OnchainWalletDemo() {
   return (
     <Wallet>
-      <ConnectWallet>
-        <Avatar className="h-6 w-6" />
-        <Name />
+      <ConnectWallet className="bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-2 rounded-md font-medium">
+        Connect Wallet
       </ConnectWallet>
       <WalletDropdown>
         <Identity className="px-4 pt-3 pb-2" hasCopyAddressOnClick>
@@ -31,16 +27,6 @@ export default function OnchainWalletDemo() {
           <Address />
           <EthBalance />
         </Identity>
-        <WalletDropdownBasename />
-        <WalletDropdownLink
-          icon="wallet"
-          href="https://keys.coinbase.com"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Wallet
-        </WalletDropdownLink>
-        <WalletDropdownFundLink />
         <WalletDropdownDisconnect />
       </WalletDropdown>
     </Wallet>

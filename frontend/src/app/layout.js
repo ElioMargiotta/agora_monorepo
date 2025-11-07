@@ -1,6 +1,5 @@
 import { Inter, JetBrains_Mono, DM_Sans } from 'next/font/google';
 import { Providers } from '@/components/providers';
-import '@coinbase/onchainkit/styles.css';
 import './globals.css';
 
 const inter = Inter({
@@ -58,23 +57,7 @@ export const metadata = {
     index: true,
     follow: true,
   },
-  other: {
-    'fc:miniapp': JSON.stringify({
-      version: "next",
-      imageUrl: "https://aequilibra.vercel.app/og-image.png",
-      button: {
-        title: "Open Aequilibra",
-        action: {
-          type: "launch_miniapp",
-          name: "Aequilibra",
-          url: "https://aequilibra.vercel.app"
-        }
-      }
-    })
-  }
 };
-
-import { MiniAppSdk } from '@/components/MiniAppSdk';
 
 export default function RootLayout({ children }) {
   return (
@@ -94,7 +77,6 @@ export default function RootLayout({ children }) {
           Skip to main content
         </a>
         
-        <MiniAppSdk />
         <Providers>
           <div id="root" role="application" aria-label="Aequilibra App">
             {children}
