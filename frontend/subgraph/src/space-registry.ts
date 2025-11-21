@@ -14,15 +14,12 @@ import {
   AdminRemoved,
   MemberJoined,
   MemberLeft,
-  Space,
-  Owner,
   SpaceCreated,
   SpaceDeactivated,
   SpaceDisplayNameUpdated,
   SpaceTransferred,
   WhitelistUpdated
 } from "../generated/schema"
-import { BigInt } from "@graphprotocol/graph-ts"
 
 export function handleAdminAdded(event: AdminAddedEvent): void {
   let entity = new AdminAdded(
@@ -36,13 +33,6 @@ export function handleAdminAdded(event: AdminAddedEvent): void {
   entity.transactionHash = event.transaction.hash
 
   entity.save()
-
-  // Update space admin count
-  let space = Space.load(event.params.spaceId)
-  if (space) {
-    space.adminCount = space.adminCount.plus(BigInt.fromI32(1))
-    space.save()
-  }
 }
 
 export function handleAdminRemoved(event: AdminRemovedEvent): void {
@@ -57,13 +47,6 @@ export function handleAdminRemoved(event: AdminRemovedEvent): void {
   entity.transactionHash = event.transaction.hash
 
   entity.save()
-
-  // Update space admin count
-  let space = Space.load(event.params.spaceId)
-  if (space && space.adminCount.gt(BigInt.fromI32(0))) {
-    space.adminCount = space.adminCount.minus(BigInt.fromI32(1))
-    space.save()
-  }
 }
 
 export function handleMemberJoined(event: MemberJoinedEvent): void {
@@ -78,13 +61,6 @@ export function handleMemberJoined(event: MemberJoinedEvent): void {
   entity.transactionHash = event.transaction.hash
 
   entity.save()
-
-  // Update space member count
-  let space = Space.load(event.params.spaceId)
-  if (space) {
-    space.memberCount = space.memberCount.plus(BigInt.fromI32(1))
-    space.save()
-  }
 }
 
 export function handleMemberLeft(event: MemberLeftEvent): void {
@@ -99,13 +75,6 @@ export function handleMemberLeft(event: MemberLeftEvent): void {
   entity.transactionHash = event.transaction.hash
 
   entity.save()
-
-  // Update space member count
-  let space = Space.load(event.params.spaceId)
-  if (space && space.memberCount.gt(BigInt.fromI32(0))) {
-    space.memberCount = space.memberCount.minus(BigInt.fromI32(1))
-    space.save()
-  }
 }
 
 export function handleSpaceCreated(event: SpaceCreatedEvent): void {
@@ -122,28 +91,6 @@ export function handleSpaceCreated(event: SpaceCreatedEvent): void {
   entity.transactionHash = event.transaction.hash
 
   entity.save()
-
-  // Create the Space entity
-  let space = new Space(event.params.spaceId)
-  space.spaceId = event.params.spaceId
-  space.ensName = event.params.ensName
-  space.displayName = event.params.displayName
-  space.owner = event.params.owner
-  space.createdAt = event.block.timestamp
-  space.isActive = true
-  space.memberCount = BigInt.fromI32(0)
-  space.adminCount = BigInt.fromI32(0)
-  space.save()
-
-  // Create or update the Owner entity
-  let owner = Owner.load(event.params.owner)
-  if (owner == null) {
-    owner = new Owner(event.params.owner)
-    owner.address = event.params.owner
-    owner.spaceCount = BigInt.fromI32(0)
-  }
-  owner.spaceCount = owner.spaceCount.plus(BigInt.fromI32(1))
-  owner.save()
 }
 
 export function handleSpaceDeactivated(event: SpaceDeactivatedEvent): void {

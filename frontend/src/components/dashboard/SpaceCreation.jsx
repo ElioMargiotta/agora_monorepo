@@ -12,7 +12,7 @@ import { Loader2, CheckCircle, AlertCircle } from 'lucide-react';
 import spaceRegistryAbi from '@/abis/SpaceRegistry.json';
 
 // Contract addresses
-const SPACE_REGISTRY_ADDRESS = '0x7579FDF957567e2Eb881A0B00a7cF5772A59759b';
+const SPACE_REGISTRY_ADDRESS = process.env.NEXT_PUBLIC_SPACE_REGISTRY_ADDRESS;
 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
 
 export function SpaceCreation() {

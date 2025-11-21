@@ -8,9 +8,9 @@ dataSources:
     name: SpaceRegistry
     network: sepolia
     source:
-      address: "0x7579FDF957567e2Eb881A0B00a7cF5772A59759b"
+      address: "0xb8c859bC79E04cA5E729fF1B371627710682f3bC"
       abi: SpaceRegistry
-      startBlock: 0
+      startBlock: 9659067
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.9
@@ -48,3 +48,62 @@ dataSources:
         - event: WhitelistUpdated(indexed bytes32,indexed address,bool)
           handler: handleWhitelistUpdated
       file: ./src/space-registry.ts
+  - kind: ethereum
+    name: MockGouvernanceToken
+    network: sepolia
+    source:
+      address: "0x24b8aE269ad0284762AfcAC32b5c1EF42875fa7D"
+      abi: MockGouvernanceToken
+      startBlock: 9659008
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.9
+      language: wasm/assemblyscript
+      entities:
+        - Approval
+        - DelegateChanged
+        - DelegateVotesChanged
+        - EIP712DomainChanged
+        - Transfer
+      abis:
+        - name: MockGouvernanceToken
+          file: ./abis/MockGouvernanceToken.json
+      eventHandlers:
+        - event: Approval(indexed address,indexed address,uint256)
+          handler: handleApproval
+        - event: DelegateChanged(indexed address,indexed address,indexed address)
+          handler: handleDelegateChanged
+        - event: DelegateVotesChanged(indexed address,uint256,uint256)
+          handler: handleDelegateVotesChanged
+        - event: EIP712DomainChanged()
+          handler: handleEIP712DomainChanged
+        - event: Transfer(indexed address,indexed address,uint256)
+          handler: handleTransfer
+      file: ./src/mock-gouvernance-token.ts
+  - kind: ethereum
+    name: PrivateProposalFactory
+    network: sepolia
+    source:
+      address: "0x0CE0a60a8801C29ea2c35e2ad9B0E29CE3eFB4c6"
+      abi: PrivateProposalFactory
+      startBlock: 9659006
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.9
+      language: wasm/assemblyscript
+      entities:
+        - ProposalCancelled
+        - ProposalCreated
+        - UpkeepPerformed
+      abis:
+        - name: PrivateProposalFactory
+          file: ./abis/PrivateProposalFactory.json
+      eventHandlers:
+        - event: ProposalCancelled(indexed address,string,indexed address)
+          handler: handleProposalCancelled
+        - event: ProposalCreated(indexed bytes32,indexed
+            bytes32,address,(bytes32,string,string,string,string,uint8,string[],uint64,uint64,address[],uint256[],bytes[],address,uint8,address,uint256,address))
+          handler: handleProposalCreated
+        - event: UpkeepPerformed(indexed address,uint256)
+          handler: handleUpkeepPerformed
+      file: ./src/private-proposal-factory.ts

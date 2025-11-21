@@ -13,7 +13,7 @@ import { ethers } from 'ethers';
 import mockENSABI from '@/abis/MockENS.json';
 
 // Contract address for Sepolia
-const MOCK_ENS_ADDRESS = '0x6649b08Be729538Bc290305040Cd6e18c1425428';
+const MOCK_ENS_ADDRESS = process.env.NEXT_PUBLIC_MOCK_ENS_ADDRESS || '0x0000000000000000000000000000000000000000';
 
 export default function ENSRegistrationPage() {
   const { address, isConnected } = useAccount();

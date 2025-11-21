@@ -26,7 +26,7 @@ export const config = getDefaultConfig({
         metaMaskWallet,
         rainbowWallet,
         coinbaseWallet,
-        walletConnectWallet,
+        // walletConnectWallet, // Temporarily disabled - requires valid project ID
       ],
     },
     {

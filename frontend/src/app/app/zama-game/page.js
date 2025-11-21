@@ -136,7 +136,7 @@ export default function ZamaMindGamesPage() {
             initSDK,
             createInstance,
             SepoliaConfig,
-          } from 'https://cdn.zama.ai/relayer-sdk-js/0.2.0/relayer-sdk-js.js';
+          } from 'https://cdn.zama.ai/relayer-sdk-js/0.3.0-5/relayer-sdk-js.js';
 
           window.ZamaSDK = {
             initSDK,

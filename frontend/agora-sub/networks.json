@@ -3,6 +3,15 @@
     "SpaceRegistry": {
       "address": "0x7579FDF957567e2Eb881A0B00a7cF5772A59759b",
       "startBlock": 0
+    },
+    "MockENS": {
+      "address": "0x71eA1E53842D4DeFe5A34c6C2697dB4e9dd33b96"
+    },
+    "MockGouvernanceToken": {
+      "address": "0x24b8aE269ad0284762AfcAC32b5c1EF42875fa7D"
+    },
+    "PrivateProposalFactory": {
+      "address": "0x0CE0a60a8801C29ea2c35e2ad9B0E29CE3eFB4c6"
     }
   }
 }

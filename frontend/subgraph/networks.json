@@ -1,0 +1,8 @@
+{
+  "sepolia": {
+    "SpaceRegistry": {
+      "address": "0xa73445e92057fC0eC34b49E009F178A40Cbae63f",
+      "startBlock": 9672544
+    }
+  }
+}
