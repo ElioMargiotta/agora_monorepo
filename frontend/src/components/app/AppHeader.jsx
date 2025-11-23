@@ -71,10 +71,10 @@ export function AppHeader() {
       <div className="mx-auto flex h-16 max-w-screen-2xl items-center justify-between px-4 md:px-8">
         {/* Logo Section */}
         <div className="flex items-center gap-4">
-          <Link href="/" className="flex items-center gap-3">
-            <div className="w-10 h-10 relative rounded-lg p-1" style={{ backgroundColor: 'rgba(255, 255, 255, 0.1)' }}>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 relative rounded-lg p-1">
               <Image
-                src="/agora.svg"
+                src="/agora_white.svg"
                 alt="Agora Logo"
                 fill
                 className="object-contain"
@@ -86,10 +86,10 @@ export function AppHeader() {
                 A G O R A
               </span>
               <span className="text-xs -mt-1" style={{ color: 'rgba(255, 255, 255, 0.7)' }}>
-                Privacy back in old time
+                kryptē psêphos — parrhesia tēroumenē
               </span>
             </div>
-          </Link>
+          </div>
         </div>
 
         {/* Desktop Navigation */}
