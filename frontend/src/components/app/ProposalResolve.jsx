@@ -6,6 +6,7 @@ import { useReadContract } from 'wagmi';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import PrivateProposalABI from '@/abis/PrivateProposal.json';
+import { decryptMultipleHandles } from '@/lib/fhevm';
 
 export default function ProposalResolve({ proposal, signer, fheInitialized, currentTime, pEnd, publicProvider }) {
   const [resolving, setResolving] = useState(false);
@@ -86,19 +87,9 @@ export default function ProposalResolve({ proposal, signer, fheInitialized, curr
 
     try {
       const proposalAddress = proposal.proposal;
-      // Decrypt the handles via API
-      const response = await fetch('/api/decrypt', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contractAddress: proposalAddress, handles })
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Decryption failed');
-      }
-
-      const { cleartexts, decryptionProof } = await response.json();
+      // Decrypt the handles client-side
+      const result = await decryptMultipleHandles(proposalAddress, signer, handles);
+      const { cleartexts, decryptionProof } = result;
 
       // Submit to contract for on-chain verification
       const proposalContract = new ethers.Contract(proposalAddress, PrivateProposalABI.abi, signer);
@@ -142,21 +133,9 @@ export default function ProposalResolve({ proposal, signer, fheInitialized, curr
 
       console.log('Encrypted handles:', handles);
 
-      // Decrypt the handles via API to avoid CORS
-      const response = await fetch('/api/decrypt', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contractAddress: proposalAddress, handles })
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Decryption failed');
-      }
-
-      const { cleartexts, decryptionProof } = await response.json();
-
-      console.log('Received from API:', { cleartexts, decryptionProof });
+      // Decrypt the handles client-side
+      const result = await decryptMultipleHandles(proposalAddress, signer, handles);
+      const { cleartexts, decryptionProof } = result;
 
       console.log('Decrypted cleartexts:', cleartexts);
       console.log('Decryption proof:', decryptionProof);

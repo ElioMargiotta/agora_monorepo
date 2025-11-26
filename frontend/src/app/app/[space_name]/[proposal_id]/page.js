@@ -228,80 +228,32 @@ export default function ProposalVotePage() {
       let tx;
       if (pType === 0) {
         console.log('Non-weighted vote for choice:', choiceIndex);
-        // Non-weighted vote - encrypt via API
-        const response = await fetch('/api/encrypt', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            proposalAddress,
-            userAddress: address,
-            voteType: pType,
-            choiceIndex
-          })
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || 'Encryption failed');
-        }
-
-        const encryptedInput = await response.json();
-        console.log('Encrypted input from API:', encryptedInput);
+        // Non-weighted vote - encrypt client-side
+        const encryptedInput = await createEncryptedInput(proposalAddress, address, choiceIndex);
+        console.log('Encrypted input:', encryptedInput);
         const proposalContract = new ethers.Contract(proposalAddress, PrivateProposalABI.abi, signer);
         console.log('Calling voteNonweighted...');
         tx = await proposalContract.voteNonweighted(encryptedInput.encryptedData, encryptedInput.proof);
         console.log('Transaction sent:', tx.hash);
       } else if (pType === 1) {
         console.log('Single weighted vote for choice:', choiceIndex);
-        // Single weighted vote - encrypt via API
-        const response = await fetch('/api/encrypt', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            proposalAddress,
-            userAddress: address,
-            voteType: pType,
-            choiceIndex
-          })
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || 'Encryption failed');
-        }
-
-        const encryptedInput = await response.json();
-        console.log('Encrypted input from API:', encryptedInput);
+        // Single weighted vote - encrypt client-side
+        const encryptedInput = await createEncryptedInput(proposalAddress, address, choiceIndex);
+        console.log('Encrypted input:', encryptedInput);
         const proposalContract = new ethers.Contract(proposalAddress, PrivateProposalABI.abi, signer);
         console.log('Calling voteWeightedSingle...');
         tx = await proposalContract.voteWeightedSingle(encryptedInput.encryptedData, encryptedInput.proof);
         console.log('Transaction sent:', tx.hash);
       } else if (pType === 2) {
         console.log('Fractional voting with percentages:', percentages);
-        // Fractional voting - encrypt via API
+        // Fractional voting - encrypt client-side
         // Send percentageInputs with length exactly equal to choicesLength() from contract
         // Include percentages for all choices including abstain, ensuring they sum to 100
         const percentageArray = Array.from({ length: choicesLength }, (_, index) => percentages[index] || 0);
         console.log('Percentage array:', percentageArray, 'length:', percentageArray.length, 'expected length:', choicesLength);
 
-        const response = await fetch('/api/encrypt', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            proposalAddress,
-            userAddress: address,
-            voteType: pType,
-            percentages: percentageArray
-          })
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || 'Encryption failed');
-        }
-
-        const encryptedPercentages = await response.json();
-        console.log('Encrypted percentages from API:', encryptedPercentages);
+        const encryptedPercentages = await createEncryptedPercentages(proposalAddress, address, percentageArray);
+        console.log('Encrypted percentages:', encryptedPercentages);
         console.log('encryptedInputs:', encryptedPercentages.encryptedInputs);
         console.log('proof:', encryptedPercentages.proof);
         const proposalContract = new ethers.Contract(proposalAddress, PrivateProposalABI.abi, signer);
