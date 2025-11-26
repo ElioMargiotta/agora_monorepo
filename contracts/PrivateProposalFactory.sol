@@ -1,73 +1,65 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import "./PrivateProposal.sol";
-import "./IProposalFactory.sol";
-import "./SpaceRegistry.sol";
-import "./VotingUtils.sol";
 import {AutomationCompatibleInterface} from "@chainlink/contracts/src/v0.8/automation/AutomationCompatible.sol";
+import {PrivateProposal} from "./PrivateProposal.sol";
+import {IProposalFactory, CreateProposalParams, EligibilityType} from "./IProposalFactory.sol";
+import {SpaceRegistry} from "./SpaceRegistry.sol";
+import {ProposalAutomation} from "./ProposalAutomation.sol";
 
-/// @title Factory for deploying new proposal instances with Chainlink automation
-/// @notice Deploy and manage multiple proposal contracts from a single factory
-/// @dev ONE Chainlink Upkeep monitors ALL proposals - highly scalable!
+/// @title Factory for deploying new proposal instances
+/// @notice Deploy and manage multiple proposal contracts
+/// @dev Uses time-bucketed automation for efficient upkeep
+/// @author Elio Margiotta
 contract PrivateProposalFactory is IProposalFactory, AutomationCompatibleInterface {
     
     // ============ State Variables ============
     
+    /// @notice The owner of the contract
     address public owner;
+    /// @notice The space registry contract instance
     SpaceRegistry public spaceRegistry;
     
-    address[] public allVotings;
-    mapping(string => address) public votingByName;
-    mapping(address => uint256) public votingIndex;
-    mapping(address => bool) public isValidVoting;
-    mapping(address => bool) public isWhitelisted;
-    mapping(address => address[]) public userVotings;
-    mapping(address => bool) public isCancelled; // Track cancelled votings
+    /// @notice Mapping to track if a proposal is cancelled
+    mapping(address proposal => bool cancelled) public isCancelled; // Track cancelled votings
     
     // Space-based organization - tracks proposals per space
-    mapping(bytes32 => address[]) public spaceProposals; // spaceId => proposal addresses
+    /// @notice Mapping of space IDs to their proposal addresses
+    mapping(bytes32 spaceId => address[] proposals) public spaceProposals; // spaceId => proposal addresses
     
+    // Time-bucketed proposals for efficient automation
+    /// @notice Time-bucketed proposals for automation
+    mapping(uint256 bucket => address[] proposals) public timeBucketedProposals; // bucketIndex => proposal addresses
+    /// @notice Current bucket index being processed
+    uint256 public currentBucketIndex; // Current bucket being processed
+
     // ============ Events ============
     
-    event VotingCreated(
-        address indexed votingAddress,
-        string name,
-        uint256 voteDepositAmount,
-        uint256 votingDuration,
-        uint256 votingStartTime,
-        uint256 votingEndTime,
-        uint256 createdAt,
-        address indexed creator
-    );
-    
-    event VotingCancelled(address indexed votingAddress, string name, address indexed cancelledBy);
-    event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
-    event WhitelistUpdated(address indexed user, bool status);
-    event UserVoteRecorded(address indexed user, address indexed votingAddress);
-    event UpkeepPerformed(address indexed votingAddress, uint256 timestamp);
-    event UpkeepFailed(address indexed votingAddress, string reason);
+    /// @notice Emitted when a proposal is cancelled
+    /// @param proposalAddress The address of the cancelled proposal
+    /// @param name The name of the proposal
+    /// @param cancelledBy The address that cancelled the proposal
+    event ProposalCancelled(address indexed proposalAddress, string name, address indexed cancelledBy);
+    /// @notice Emitted when upkeep is performed
+    /// @param votingAddress The voting address
+    /// @param timestamp The timestamp when upkeep was performed
+    event UpkeepPerformed(address indexed votingAddress, uint256 indexed timestamp);
     
     // ============ Errors (saves gas vs require strings) ============
     
     error OnlyOwner();
-    error NotWhitelisted();
+    error NotAuthorized();
     error NotSpaceOwner();
     error SpaceNotExist();
     error ZeroAddr();
     error EmptyName();
-    error NameTooLong();
-    error NameUsed();
-    error DurationShort();
-    error DurationLong();
     error StartPast();
-    error InvalidIdx();
-    error NotValid();
-    error OnlyValid();
-    error InvalidDeposit();
+    error NameTooLong();
+    error InvalidThreshold();
+    error SnapshotInFuture();
+    error AlreadyCancelled();
     error Started();
-    error NotCancellable();
-    error Cancelled();
+    error InvalidProposalType();
     
     // ============ Modifiers ============
     
@@ -76,36 +68,14 @@ contract PrivateProposalFactory is IProposalFactory, AutomationCompatibleInterfa
         _;
     }
     
-    modifier onlyWhitelisted() {
-        if (!isWhitelisted[msg.sender] && msg.sender != owner) revert NotWhitelisted();
-        _;
-    }
-    
     // ============ Constructor ============
     
+    /// @notice Initializes the contract
+    /// @param _spaceRegistry Address of the space registry
     constructor(address _spaceRegistry) {
         if (_spaceRegistry == address(0)) revert ZeroAddr();
         owner = msg.sender;
         spaceRegistry = SpaceRegistry(_spaceRegistry);
-        isWhitelisted[msg.sender] = true;
-    }
-    
-    // ============ Whitelist Management ============
-    
-    function updateWhitelist(address user, bool status) external onlyOwner {
-        if (user == address(0)) revert ZeroAddr();
-        isWhitelisted[user] = status;
-        emit WhitelistUpdated(user, status);
-    }
-    
-    function batchUpdateWhitelist(address[] calldata users, bool status) external onlyOwner {
-        uint256 len = users.length;
-        for (uint256 i = 0; i < len; ) {
-            if (users[i] == address(0)) revert ZeroAddr();
-            isWhitelisted[users[i]] = status;
-            emit WhitelistUpdated(users[i], status);
-            unchecked { ++i; }
-        }
     }
     
     // ============ Voting Creation ============
@@ -114,7 +84,10 @@ contract PrivateProposalFactory is IProposalFactory, AutomationCompatibleInterfa
     /// @param params Proposal parameters
     /// @return proposal Address of the newly deployed proposal contract
     /// @return proposalId Unique identifier for the proposal
-    function createProposal(CreateProposalParams memory params) external onlyWhitelisted returns (address proposal, bytes32 proposalId) {
+    function createProposal(CreateProposalParams calldata params)
+        external
+        returns (address proposal, bytes32 proposalId)
+    {
         bytes memory nameBytes = bytes(params.title);
         if (nameBytes.length == 0) revert EmptyName();
         if (nameBytes.length > 200) revert NameTooLong();
@@ -122,28 +95,30 @@ contract PrivateProposalFactory is IProposalFactory, AutomationCompatibleInterfa
         // Check that space exists and is active
         if (!spaceRegistry.spaceIsActive(params.spaceId)) revert SpaceNotExist();
         
-        // Check space ownership - only space owner OR whitelisted user can create proposals
-        if (!spaceRegistry.isSpaceOwner(params.spaceId, msg.sender) && !isWhitelisted[msg.sender]) {
+        // Check authorization - only space owner or space admin can create proposals
+        if (!spaceRegistry.isSpaceOwner(params.spaceId, msg.sender) && 
+            !spaceRegistry.isSpaceAdmin(params.spaceId, msg.sender)) {
             revert NotSpaceOwner();
         }
         
-        // Check uniqueness globally (for now)
-        if (votingByName[params.title] != address(0)) revert NameUsed();
+        // Validate eligibility parameters
+        if (params.eligibilityType == EligibilityType.TokenHolder) {
+            if (params.eligibilityToken == address(0)) revert ZeroAddr();
+            if (params.eligibilityThreshold == 0) revert InvalidThreshold();
+        }
+        
 
-        PrivateProposal proposalContract = new PrivateProposal(params);
+        PrivateProposal proposalContract = new PrivateProposal(params, address(spaceRegistry));
 
         proposal = address(proposalContract);
         proposalId = keccak256(abi.encodePacked(params.spaceId, params.title, block.timestamp, msg.sender));
 
-        uint256 index = allVotings.length;
-        allVotings.push(proposal);
-        votingByName[params.title] = proposal;
-        votingIndex[proposal] = index;
-        isValidVoting[proposal] = true;
         
         // Space-based organization
         spaceProposals[params.spaceId].push(proposal);
-        userVotings[msg.sender].push(proposal);
+
+        // Add to automation bucket for upkeep
+        ProposalAutomation.addProposalToBucket(timeBucketedProposals, proposal, params.end);
 
         emit ProposalCreated(
             params.spaceId,
@@ -151,178 +126,61 @@ contract PrivateProposalFactory is IProposalFactory, AutomationCompatibleInterfa
             proposal,
             params
         );
-
-        emit VotingCreated(
-            proposal,
-            params.title,
-            0, // no deposit
-            uint256(params.end - params.start),
-            params.start,
-            params.end,
-            block.timestamp,
-            msg.sender
-        );
     }
     
     /// @notice Cancel a proposal before it starts (only creator or owner)
-    /// @param votingAddress Address of the proposal to cancel
-    function cancelVoting(address votingAddress) external {
-        if (!isValidVoting[votingAddress]) revert NotValid();
-        if (isCancelled[votingAddress]) revert Cancelled();
+    /// @param proposalAddress Address of the proposal to cancel
+    function cancelProposal(address proposalAddress) external {
+        if (isCancelled[proposalAddress]) revert AlreadyCancelled();
         
-        PrivateProposal proposal = PrivateProposal(votingAddress);
+        PrivateProposal proposal = PrivateProposal(proposalAddress);
         
         // Only creator or owner can cancel
-        if (proposal.creator() != msg.sender && msg.sender != owner) revert NotWhitelisted();
+        if (proposal.creator() != msg.sender && msg.sender != owner) revert NotAuthorized();
         
-        // Can only cancel before proposal starts
-        if (block.timestamp >= proposal.start()) revert Started();
+    // Can only cancel before proposal starts
+    if (block.timestamp > proposal.start()) revert Started();        string memory proposalName = proposal.title();
         
-        string memory proposalName = proposal.title();
+        // Mark as cancelled
+        isCancelled[proposalAddress] = true;
         
-        // Mark as cancelled (cheaper than array removal)
-        isCancelled[votingAddress] = true;
-        isValidVoting[votingAddress] = false;
-        delete votingByName[proposalName];
-        
-        emit VotingCancelled(votingAddress, proposalName, msg.sender);
-    }
-    
-    function recordUserVote(address user, address votingAddress) external {
-        if (!isValidVoting[msg.sender]) revert OnlyValid();
-        userVotings[user].push(votingAddress);
-        emit UserVoteRecorded(user, votingAddress);
-    }
-    
-    // ============ Space Management ============
-    
-    /// @notice Get all proposals for a specific space
-    /// @param spaceId The space identifier
-    /// @return Array of proposal addresses in the space
-    function getSpaceProposals(bytes32 spaceId) external view returns (address[] memory) {
-        return spaceProposals[spaceId];
-    }
-    
-    /// @notice Get space information
-    /// @param spaceId The space identifier
-    /// @return spaceOwner The space owner
-    /// @return displayName The space display name
-    /// @return proposalCount Number of proposals in the space
-    function getSpaceInfo(bytes32 spaceId) external view returns (address spaceOwner, string memory displayName, uint256 proposalCount) {
-        (string memory spaceName, , address ownerAddr, , ) = spaceRegistry.getSpace(spaceId);
-        return (ownerAddr, spaceName, spaceProposals[spaceId].length);
+        emit ProposalCancelled(proposalAddress, proposalName, msg.sender);
     }
     
     // ============ View Functions ============
     
-    function votingCount() external view returns (uint256) {
-        return allVotings.length;
-    }
-    
-    function getVoting(uint256 index) external view returns (address) {
-        if (index >= allVotings.length) revert InvalidIdx();
-        return allVotings[index];
-    }
-    
-    function getAllVotings() external view returns (address[] memory) {
-        return allVotings;
-    }
-    
-    function getUpcomingVotings() external view returns (address[] memory) {
-        return VotingUtils.filterVotings(allVotings, isCancelled, 0);
-    }
-    
-    function getActiveVotings() external view returns (address[] memory) {
-        return VotingUtils.filterVotings(allVotings, isCancelled, 1);
-    }
-    
-    function getEndedVotings() external view returns (address[] memory) {
-        return VotingUtils.filterVotings(allVotings, isCancelled, 2);
-    }
-    
-    function getUserVotings(address user) external view returns (address[] memory) {
-        return userVotings[user];
-    }
-    
-
-    
     // ============ Chainlink Automation ============
     
-    /// @notice Check if any votings need resolution (called by Chainlink off-chain)
-    /// @dev Scans all votings and returns those ready for decryption
-    /// @return upkeepNeeded True if at least one voting is ready
-    /// @return performData Encoded array of voting addresses to process
+    /// @notice Check if upkeep is needed for proposal resolution
+    /// @return upkeepNeeded Whether upkeep is needed
+    /// @return performData Data to pass to performUpkeep
     function checkUpkeep(bytes calldata /* checkData */)
         external
         view
         override
         returns (bool upkeepNeeded, bytes memory performData)
     {
-        uint256 len = allVotings.length;
-        uint256 readyCount = 0;
-        
-        // First pass: count ready votings
-        for (uint256 i = 0; i < len; ) {
-            if (!isCancelled[allVotings[i]]) {
-                PrivateProposal voting = PrivateProposal(allVotings[i]);
-                if (block.timestamp >= voting.end() && 
-                    !voting.resultsRevealed() && 
-                    !voting.autoRevealTriggered()) {
-                    unchecked { ++readyCount; }
-                }
-            }
-            unchecked { ++i; }
-        }
-        
-        upkeepNeeded = readyCount > 0;
-        
-        if (readyCount > 0) {
-            address[] memory result = new address[](readyCount);
-            uint256 resultIdx = 0;
-            
-            // Second pass: collect addresses
-            for (uint256 i = 0; i < len; ) {
-                if (!isCancelled[allVotings[i]]) {
-                    PrivateProposal voting = PrivateProposal(allVotings[i]);
-                    if (block.timestamp >= voting.end() && 
-                        !voting.resultsRevealed() && 
-                        !voting.autoRevealTriggered()) {
-                        result[resultIdx] = allVotings[i];
-                        unchecked { ++resultIdx; }
-                    }
-                }
-                unchecked { ++i; }
-            }
-            performData = abi.encode(result);
-        }
+        ProposalAutomation.AutomationCheck memory checkResult =
+            ProposalAutomation.checkProposalsUpkeep(
+                isCancelled,
+                timeBucketedProposals
+            );
+
+        upkeepNeeded = checkResult.upkeepNeeded;
+        performData = checkResult.performData;
     }
-    
+
+    /// @notice Perform upkeep on proposals that need resolution
+    /// @param performData Data from checkUpkeep containing proposal addresses
     function performUpkeep(bytes calldata performData) external override {
-        address[] memory votingsToResolve = abi.decode(performData, (address[]));
-        uint256 len = votingsToResolve.length;
-        uint256 maxBatch = len > 10 ? 10 : len;
-        
-        for (uint256 i = 0; i < maxBatch; ) {
-            PrivateProposal voting = PrivateProposal(votingsToResolve[i]);
-            
-            // Conditions already verified in checkUpkeep, just trigger
-            try voting.performUpkeep("") {
-                emit UpkeepPerformed(votingsToResolve[i], block.timestamp);
-            } catch Error(string memory reason) {
-                emit UpkeepFailed(votingsToResolve[i], reason);
-            } catch {
-                emit UpkeepFailed(votingsToResolve[i], "Unknown error");
-            }
-            unchecked { ++i; }
+        ProposalAutomation.performProposalsUpkeep(performData, 50); // Process up to 50 proposals per upkeep
+
+        // Emit event if upkeep was performed
+        if (performData.length > 0) {
+            emit UpkeepPerformed(address(0), block.timestamp);
         }
-    }
-    
-    // ============ Admin Functions ============
-    
-    function transferOwnership(address newOwner) external onlyOwner {
-        if (newOwner == address(0)) revert ZeroAddr();
-        address oldOwner = owner;
-        owner = newOwner;
-        emit OwnershipTransferred(oldOwner, newOwner);
+
+        // Advance bucket after processing
+        currentBucketIndex = ProposalAutomation.advanceBucket(currentBucketIndex);
     }
 }

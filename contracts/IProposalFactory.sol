@@ -1,43 +1,29 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-/// @title Proposal Factory Interface
-/// @notice Standard interface for proposal factory contracts
-
 // ============ Enums and Structs ============
 
-enum ProposalType   { SingleChoice, Approval, Weighted, Quadratic, Ranked, Basic }
-enum QuorumMode     { Absolute, PercentOfCast }
-enum ThresholdMode  { SimpleMajority, SuperMajority }
-enum RevealPolicy   { TotalsOnly, WinnerOnly, PerChoiceTotals, Custom }
-
-struct FHEConfig {
-    bool enabled;
-}
+enum ProposalType   { NonWeightedSingleChoice, WeightedSingleChoice, WeightedFractional }
+enum EligibilityType { Public, TokenHolder }
 
 struct CreateProposalParams {
     bytes32 spaceId;
-    string title;
-    string bodyURI;
-    string discussionURI;
-    string app;
-    ProposalType pType;
-    string[] choices;
     uint64 start;
     uint64 end;
-    QuorumMode quorumMode;
-    uint256 quorumValue;
-    ThresholdMode thresholdMode;
-    uint256 thresholdValue;
-    bool abstainCountsTowardQuorum;
-    RevealPolicy revealPolicy;
-    FHEConfig fhe;
-    address[] execTargets;
-    uint256[] execValues;
-    bytes[] execCalldatas;
-    address execStrategy;
+    address eligibilityToken;
+    uint256 eligibilityThreshold;
+    uint256 passingThreshold;
+    ProposalType pType;
+    EligibilityType eligibilityType;
+    bool includeAbstain;
+    string title;
+    string bodyURI;
+    string[] choices;
 }
 
+/// @title Proposal Factory Interface
+/// @author Elio Margiotta
+/// @notice Standard interface for proposal factory contracts
 interface IProposalFactory {
     /// @notice Emitted when a new proposal is created
     /// @param spaceId The space identifier for the proposal
