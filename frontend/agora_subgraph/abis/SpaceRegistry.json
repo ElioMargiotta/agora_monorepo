@@ -6,9 +6,12 @@
     "stateMutability": "nonpayable",
     "type": "constructor"
   },
+  { "inputs": [], "name": "AlreadyMember", "type": "error" },
+  { "inputs": [], "name": "CannotJoin", "type": "error" },
   { "inputs": [], "name": "InvalidDisplayName", "type": "error" },
   { "inputs": [], "name": "InvalidENSName", "type": "error" },
   { "inputs": [], "name": "NotENSOwner", "type": "error" },
+  { "inputs": [], "name": "NotMember", "type": "error" },
   { "inputs": [], "name": "NotSpaceOwner", "type": "error" },
   { "inputs": [], "name": "SpaceAlreadyExists", "type": "error" },
   { "inputs": [], "name": "SpaceDoesNotExist", "type": "error" },
@@ -199,7 +202,7 @@
         "type": "address"
       },
       {
-        "indexed": false,
+        "indexed": true,
         "internalType": "bool",
         "name": "status",
         "type": "bool"
@@ -362,11 +365,13 @@
   },
   {
     "inputs": [
-      { "internalType": "address", "name": "", "type": "address" },
+      { "internalType": "address", "name": "owner", "type": "address" },
       { "internalType": "uint256", "name": "", "type": "uint256" }
     ],
     "name": "ownerSpaces",
-    "outputs": [{ "internalType": "bytes32", "name": "", "type": "bytes32" }],
+    "outputs": [
+      { "internalType": "bytes32", "name": "spaces", "type": "bytes32" }
+    ],
     "stateMutability": "view",
     "type": "function"
   },
@@ -392,18 +397,20 @@
   },
   {
     "inputs": [
-      { "internalType": "bytes32", "name": "", "type": "bytes32" },
-      { "internalType": "address", "name": "", "type": "address" }
+      { "internalType": "bytes32", "name": "spaceId", "type": "bytes32" },
+      { "internalType": "address", "name": "admin", "type": "address" }
     ],
     "name": "spaceAdmins",
-    "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
+    "outputs": [{ "internalType": "bool", "name": "isAdmin", "type": "bool" }],
     "stateMutability": "view",
     "type": "function"
   },
   {
-    "inputs": [{ "internalType": "bytes32", "name": "", "type": "bytes32" }],
+    "inputs": [
+      { "internalType": "bytes32", "name": "spaceId", "type": "bytes32" }
+    ],
     "name": "spaceExists",
-    "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
+    "outputs": [{ "internalType": "bool", "name": "exists", "type": "bool" }],
     "stateMutability": "view",
     "type": "function"
   },
@@ -418,45 +425,53 @@
   },
   {
     "inputs": [
-      { "internalType": "bytes32", "name": "", "type": "bytes32" },
-      { "internalType": "address", "name": "", "type": "address" }
+      { "internalType": "bytes32", "name": "spaceId", "type": "bytes32" },
+      { "internalType": "address", "name": "member", "type": "address" }
     ],
     "name": "spaceMembers",
-    "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
+    "outputs": [{ "internalType": "bool", "name": "isMember", "type": "bool" }],
     "stateMutability": "view",
     "type": "function"
   },
   {
     "inputs": [
-      { "internalType": "bytes32", "name": "", "type": "bytes32" },
-      { "internalType": "address", "name": "", "type": "address" }
+      { "internalType": "bytes32", "name": "spaceId", "type": "bytes32" },
+      { "internalType": "address", "name": "user", "type": "address" }
     ],
     "name": "spaceWhitelist",
-    "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
+    "outputs": [
+      { "internalType": "bool", "name": "isWhitelisted", "type": "bool" }
+    ],
     "stateMutability": "view",
     "type": "function"
   },
   {
-    "inputs": [{ "internalType": "bytes32", "name": "", "type": "bytes32" }],
+    "inputs": [
+      { "internalType": "bytes32", "name": "spaceId", "type": "bytes32" }
+    ],
     "name": "spaces",
     "outputs": [
       { "internalType": "bytes32", "name": "spaceId", "type": "bytes32" },
-      { "internalType": "string", "name": "ensName", "type": "string" },
-      { "internalType": "string", "name": "displayName", "type": "string" },
       { "internalType": "address", "name": "owner", "type": "address" },
       { "internalType": "uint256", "name": "createdAt", "type": "uint256" },
-      { "internalType": "bool", "name": "active", "type": "bool" },
       {
-        "internalType": "enum MembershipType",
-        "name": "membershipType",
-        "type": "uint8"
+        "internalType": "uint256",
+        "name": "criteriaAmount",
+        "type": "uint256"
       },
       {
         "internalType": "address",
         "name": "criteriaContract",
         "type": "address"
       },
-      { "internalType": "uint256", "name": "criteriaAmount", "type": "uint256" }
+      {
+        "internalType": "enum MembershipType",
+        "name": "membershipType",
+        "type": "uint8"
+      },
+      { "internalType": "bool", "name": "active", "type": "bool" },
+      { "internalType": "string", "name": "ensName", "type": "string" },
+      { "internalType": "string", "name": "displayName", "type": "string" }
     ],
     "stateMutability": "view",
     "type": "function"

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams } from 'next/navigation';
-import { useAccount, useWalletClient, useReadContract } from 'wagmi';
+import { useAccount, useWalletClient, useReadContract, useContractReads } from 'wagmi';
 import { ethers } from 'ethers';
 import { initializeFheInstance, createEncryptedInput, decryptMultipleHandles, createEncryptedPercentages } from '@/lib/fhevm';
 import { useProposalById } from '@/hooks/useSubgraph';
@@ -89,8 +89,11 @@ export default function ProposalVotePage() {
   const isDuring = currentTime >= pStart && currentTime < pEnd;
   const isAfter = currentTime >= pEnd;
   const status = isBeforeStart ? 'Upcoming' : isDuring ? 'Active' : 'Ended';
-  const timeSinceStart = isBeforeStart ? 'Not started' : formatTime(currentTime - pStart);
-  const timeRemaining = isAfter ? 'Ended' : formatTime(pEnd - currentTime);
+  
+  // Calculate timing strings
+  const timeUntilStart = isBeforeStart ? formatTime(pStart - currentTime) : null;
+  const timeUntilEnd = isDuring ? formatTime(pEnd - currentTime) : null;
+  const timeSinceEnd = isAfter ? formatTime(currentTime - pEnd) : null;
 
   // Get voting power
   const { data: votingPowerData } = useReadContract({
@@ -109,7 +112,30 @@ export default function ProposalVotePage() {
     enabled: !!eligibilityToken && !!address && pType > 0
   });
 
-  // Check if user has voted
+  // Get choices length from contract
+  const { data: choicesLengthData } = useReadContract({
+    address: proposal?.proposal,
+    abi: PrivateProposalABI.abi,
+    functionName: 'choicesLength',
+    enabled: !!proposal?.proposal
+  });
+
+  const choicesLength = choicesLengthData ? Number(choicesLengthData) : 0;
+
+  // Get choices from contract
+  const choicesQueries = useContractReads({
+    contracts: Array.from({ length: choicesLength }, (_, index) => ({
+      address: proposal?.proposal,
+      abi: PrivateProposalABI.abi,
+      functionName: 'choices',
+      args: [index]
+    })),
+    enabled: !!proposal?.proposal && choicesLength > 0
+  });
+
+  const choices = choicesQueries.data ? choicesQueries.data.map((result, index) => result.result || `Choice ${index + 1}`) : [];
+
+  // Get hasVoted status
   const { data: hasVotedData } = useReadContract({
     address: proposal?.proposal,
     abi: PrivateProposalABI.abi,
@@ -222,8 +248,8 @@ export default function ProposalVotePage() {
         const encryptedInput = await response.json();
         console.log('Encrypted input from API:', encryptedInput);
         const proposalContract = new ethers.Contract(proposalAddress, PrivateProposalABI.abi, signer);
-        console.log('Calling vote_nonweighted...');
-        tx = await proposalContract.vote_nonweighted(encryptedInput.encryptedData, encryptedInput.proof);
+        console.log('Calling voteNonweighted...');
+        tx = await proposalContract.voteNonweighted(encryptedInput.encryptedData, encryptedInput.proof);
         console.log('Transaction sent:', tx.hash);
       } else if (pType === 1) {
         console.log('Single weighted vote for choice:', choiceIndex);
@@ -247,14 +273,16 @@ export default function ProposalVotePage() {
         const encryptedInput = await response.json();
         console.log('Encrypted input from API:', encryptedInput);
         const proposalContract = new ethers.Contract(proposalAddress, PrivateProposalABI.abi, signer);
-        console.log('Calling vote_weighted_Single...');
-        tx = await proposalContract.vote_weighted_Single(encryptedInput.encryptedData, encryptedInput.proof);
+        console.log('Calling voteWeightedSingle...');
+        tx = await proposalContract.voteWeightedSingle(encryptedInput.encryptedData, encryptedInput.proof);
         console.log('Transaction sent:', tx.hash);
       } else if (pType === 2) {
         console.log('Fractional voting with percentages:', percentages);
         // Fractional voting - encrypt via API
-        const percentageArray = proposal.p_choices.map((_, index) => percentages[index] || 0);
-        console.log('Percentage array:', percentageArray);
+        // Send percentageInputs with length exactly equal to choicesLength() from contract
+        // Include percentages for all choices including abstain, ensuring they sum to 100
+        const percentageArray = Array.from({ length: choicesLength }, (_, index) => percentages[index] || 0);
+        console.log('Percentage array:', percentageArray, 'length:', percentageArray.length, 'expected length:', choicesLength);
 
         const response = await fetch('/api/encrypt', {
           method: 'POST',
@@ -274,9 +302,13 @@ export default function ProposalVotePage() {
 
         const encryptedPercentages = await response.json();
         console.log('Encrypted percentages from API:', encryptedPercentages);
+        console.log('encryptedInputs:', encryptedPercentages.encryptedInputs);
+        console.log('proof:', encryptedPercentages.proof);
         const proposalContract = new ethers.Contract(proposalAddress, PrivateProposalABI.abi, signer);
-        console.log('Calling vote_weighted_fractional...');
-        tx = await proposalContract.vote_weighted_fractional(encryptedPercentages.encryptedInputs, encryptedPercentages.proof);
+        console.log('Calling voteWeightedFractional with params:');
+        console.log('  percentageInputs (bytes32[]):', encryptedPercentages.encryptedInputs);
+        console.log('  inputProof (bytes):', encryptedPercentages.proof);
+        tx = await proposalContract.voteWeightedFractional(encryptedPercentages.encryptedInputs, encryptedPercentages.proof);
         console.log('Transaction sent:', tx.hash);
       } else {
         throw new Error('Unsupported proposal type');
@@ -345,7 +377,7 @@ export default function ProposalVotePage() {
                 {status}
               </Badge>
               <span className="text-sm text-black">
-                {isBeforeStart ? `Starts in ${timeRemaining}` : isDuring ? `Ends in ${timeRemaining}` : `Ended ${timeSinceStart} ago`}
+                {isBeforeStart ? `Starts in ${timeUntilStart}` : isDuring ? `Ends in ${timeUntilEnd}` : `Ended ${timeSinceEnd} ago`}
               </span>
             </div>
           </CardHeader>
@@ -380,74 +412,77 @@ export default function ProposalVotePage() {
               </div>            <div>
               <h3 className="text-lg font-semibold mb-2 text-black">Choices:</h3>
               <div className="space-y-4">
-                {proposal.p_choices?.map((choice, index) => (
-                  <div key={index}>
-                    {isDuring && !hasVoted && isEligible ? (
-                      pType === 2 ? (
-                        <div className="space-y-2">
-                          <div className="flex items-center justify-between">
-                            <label className="font-medium text-black">{choice}</label>
-                            <div className="flex items-center gap-2">
-                              <input
-                                type="number"
-                                placeholder="0"
-                                value={percentages[index] || ''}
-                                onChange={(e) => {
-                                  const val = Math.max(0, Math.min(100, parseInt(e.target.value) || 0));
+                {Array.from({ length: choicesLength }, (_, index) => {
+                  const choiceText = choices[index] || `Choice ${index + 1}`;
+                  return (
+                    <div key={index}>
+                      {isDuring && !hasVoted && isEligible ? (
+                        pType === 2 ? (
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between">
+                              <label className="font-medium text-black">{choiceText}</label>
+                              <div className="flex items-center gap-2">
+                                <input
+                                  type="number"
+                                  placeholder="0"
+                                  value={percentages[index] || ''}
+                                  onChange={(e) => {
+                                    const val = Math.max(0, Math.min(100, parseInt(e.target.value) || 0));
+                                    setPercentages({...percentages, [index]: val});
+                                  }}
+                                  className="w-16 px-2 py-1 border rounded text-center text-sm"
+                                  min="0"
+                                  max="100"
+                                />
+                                <span className="text-sm text-black">%</span>
+                              </div>
+                            </div>
+                            <div className="relative">
+                              <div 
+                                className="w-full bg-[#E8DCC4]/30 rounded-full h-6 cursor-pointer relative overflow-hidden"
+                                onClick={(e) => {
+                                  const rect = e.currentTarget.getBoundingClientRect();
+                                  const clickX = e.clientX - rect.left;
+                                  const percentage = Math.round((clickX / rect.width) * 100);
+                                  const val = Math.max(0, Math.min(100, percentage));
                                   setPercentages({...percentages, [index]: val});
                                 }}
-                                className="w-16 px-2 py-1 border rounded text-center text-sm"
-                                min="0"
-                                max="100"
-                              />
-                              <span className="text-sm text-black">%</span>
-                            </div>
-                          </div>
-                          <div className="relative">
-                            <div 
-                              className="w-full bg-[#E8DCC4]/30 rounded-full h-6 cursor-pointer relative overflow-hidden"
-                              onClick={(e) => {
-                                const rect = e.currentTarget.getBoundingClientRect();
-                                const clickX = e.clientX - rect.left;
-                                const percentage = Math.round((clickX / rect.width) * 100);
-                                const val = Math.max(0, Math.min(100, percentage));
-                                setPercentages({...percentages, [index]: val});
-                              }}
-                            >
-                              <div 
-                                className="bg-[#4D89B0] h-6 rounded-full transition-all duration-300 flex items-center justify-end pr-2"
-                                style={{ width: `${percentages[index] || 0}%` }}
                               >
-                                <span className="text-white text-xs font-medium">
-                                  {percentages[index] || 0}%
-                                </span>
+                                <div 
+                                  className="bg-[#4D89B0] h-6 rounded-full transition-all duration-300 flex items-center justify-end pr-2"
+                                  style={{ width: `${percentages[index] || 0}%` }}
+                                >
+                                  <span className="text-white text-xs font-medium">
+                                    {percentages[index] || 0}%
+                                  </span>
+                                </div>
                               </div>
                             </div>
                           </div>
-                        </div>
+                        ) : (
+                          <div className="flex items-center space-x-2">
+                            <input
+                              type="radio"
+                              id={`choice-${index}`}
+                              name="vote-choice"
+                              value={index}
+                              onChange={() => setSelectedChoice(index)}
+                              checked={selectedChoice === index}
+                            />
+                            <label htmlFor={`choice-${index}`}>{choiceText}</label>
+                          </div>
+                        )
                       ) : (
-                        <div className="flex items-center space-x-2">
-                          <input
-                            type="radio"
-                            id={`choice-${index}`}
-                            name="vote-choice"
-                            value={index}
-                            onChange={() => setSelectedChoice(index)}
-                            checked={selectedChoice === index}
-                          />
-                          <label htmlFor={`choice-${index}`}>{choice}</label>
+                        <div className="flex items-center justify-between">
+                          <span>{choiceText}</span>
+                          {pType === 2 && percentages[index] && (
+                            <span className="text-sm text-black">{percentages[index]}%</span>
+                          )}
                         </div>
-                      )
-                    ) : (
-                      <div className="flex items-center justify-between">
-                        <span>{choice}</span>
-                        {pType === 2 && percentages[index] && (
-                          <span className="text-sm text-black">{percentages[index]}%</span>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                ))}
+                      )}
+                    </div>
+                  );
+                })}
               </div>
               {pType === 2 && isDuring && !hasVoted && isEligible && (
                 <div className="mt-4 p-3 bg-[#E8DCC4]/10 rounded-lg">

@@ -325,29 +325,26 @@ export async function createEncryptedInput(contractAddress: string, userAddress:
  * @param {string} contractAddress - The contract address
  * @param {string} userAddress - The user's address
  * @param {number[]} percentages - Array of percentage values (should sum to 100)
- * @returns {Object} { percentageInputs: string[], totalPercentageProof: string }
+ * @returns {Object} { encryptedInputs: string[], proof: string }
  */
 export async function createEncryptedPercentages(contractAddress: string, userAddress: string, percentages: number[]) {
   const fhe = getFheInstance();
   if (!fhe) throw new Error('FHE instance not initialized. Call initializeFheInstance() first.');
 
-  // Create a single input handle for the entire array
-  const inputHandle = fhe.createEncryptedInput(contractAddress, userAddress);
+  console.log(`🔐 Creating encrypted percentages for contract ${contractAddress}, user ${userAddress}, percentages ${percentages}`);
 
-  // Add all percentages to the same input handle
-  for (const perc of percentages) {
-    inputHandle.add32(perc); // Use add32 for euint32
-  }
+  const encryptedInputs = fhe.createEncryptedInput(contractAddress, userAddress);
+  percentages.forEach(p => encryptedInputs.add32(p));
+  const encryptedVote = await encryptedInputs.encrypt();
 
-  // Encrypt once to get a single proof for the entire array
-  const result = await inputHandle.encrypt();
+  console.log('✅ Encrypted percentages created successfully');
+  console.log('🔍 Encrypted result structure:', encryptedVote);
 
   // Extract the encrypted data and proof
-  if (result && result.handles && result.handles.length > 0) {
-    // For array inputs, we get multiple handles from a single encryption
+  if (encryptedVote && encryptedVote.handles && encryptedVote.handles.length > 0) {
     return {
-      encryptedInputs: result.handles,
-      proof: result.inputProof
+      encryptedInputs: encryptedVote.handles,
+      proof: encryptedVote.inputProof
     };
   } else {
     throw new Error('Failed to encrypt percentages array');

@@ -56,9 +56,9 @@ export function UserDashboard() {
 
   // Joined spaces
   const joinedSpaces = allSpaces?.slice(0, 5).map(space => {
-    // Prioritize ENS name with .eth for navigation
+    // Prioritize ENS name with .agora for navigation
     const spaceName = space.ensName ? 
-      (space.ensName.endsWith('.eth') ? space.ensName : `${space.ensName}.eth`) : 
+      (space.ensName.endsWith('.agora') ? space.ensName : `${space.ensName}.agora`) : 
       (space.displayName || `Space ${space.spaceId.slice(0, 8)}`);
     
     return {
@@ -80,7 +80,6 @@ export function UserDashboard() {
     const now = Math.floor(Date.now() / 1000);
     return p.p_start <= now && p.p_end > now;
   }).slice(0, 10).map(p => {  // Limit to 10 active proposals
-    const userVote = votesData?.votes?.find(v => v.proposalId === p.proposalId);
     const space = allSpaces?.find(s => s.spaceId === p.spaceId);
     return {
       id: p.proposalId,
@@ -88,20 +87,18 @@ export function UserDashboard() {
       title: p.p_title,
       status: 'active',
       timeLeft: `${Math.ceil((p.p_end - Math.floor(Date.now() / 1000)) / 86400)} days`,
-      userVote: userVote ? p.p_choices[userVote.choice] : null,
+      userVote: null,
       totalVotes: 0
     };
   }) || []);
 
   // Recent activity from votes
   const recentActivity = votesLoading ? [] : (votesData?.votes?.slice(0, 5).map(vote => {
-    const proposal = proposalsData?.proposalCreateds?.find(p => p.proposalId === vote.proposalId);
-    const space = allSpaces?.find(s => s.spaceId === proposal?.spaceId);
     return {
       id: vote.id,
       type: "vote",
-      spaceName: space?.displayName || space?.ensName || `Space ${proposal?.spaceId.slice(0, 8)}`,
-      description: `Voted '${proposal?.p_choices[vote.choice] || 'Unknown'}' on ${proposal?.p_title || 'proposal'}`,
+      spaceName: "Unknown Space",
+      description: `Voted at ${new Date(vote.timestamp * 1000).toLocaleString()}`,
       time: new Date(vote.blockTimestamp * 1000).toLocaleString()
     };
   }) || []);

@@ -1,0 +1,118 @@
+specVersion: 1.3.0
+indexerHints:
+  prune: auto
+schema:
+  file: ./schema.graphql
+dataSources:
+  - kind: ethereum
+    name: PrivateProposalFactory
+    network: sepolia
+    source:
+      address: "0x6f27646A29501Ee4aF0e4b6ABC2B28c71F723A1A"
+      abi: PrivateProposalFactory
+      startBlock: 9706823
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.9
+      language: wasm/assemblyscript
+      entities:
+        - ProposalCancelled
+        - ProposalCreated
+        - UpkeepPerformed
+      abis:
+        - name: PrivateProposalFactory
+          file: ./abis/PrivateProposalFactory.json
+      eventHandlers:
+        - event: ProposalCancelled(indexed address,string,indexed address)
+          handler: handleProposalCancelled
+        - event: ProposalCreated(indexed bytes32,indexed
+            bytes32,address,(bytes32,uint64,uint64,address,uint256,uint256,uint8,uint8,bool,string,string,string[]))
+          handler: handleProposalCreated
+        - event: UpkeepPerformed(indexed address,indexed uint256)
+          handler: handleUpkeepPerformed
+      file: ./src/private-proposal-factory.ts
+  - kind: ethereum
+    name: SpaceRegistry
+    network: sepolia
+    source:
+      address: "0xB1480EF7694d9e57b871fdD1a779eb5f278C8308"
+      abi: SpaceRegistry
+      startBlock: 9706820
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.9
+      language: wasm/assemblyscript
+      entities:
+        - AdminAdded
+        - AdminRemoved
+        - MemberJoined
+        - MemberLeft
+        - SpaceCreated
+        - SpaceDeactivated
+        - SpaceDisplayNameUpdated
+        - SpaceTransferred
+        - WhitelistUpdated
+      abis:
+        - name: SpaceRegistry
+          file: ./abis/SpaceRegistry.json
+      eventHandlers:
+        - event: AdminAdded(indexed bytes32,indexed address)
+          handler: handleAdminAdded
+        - event: AdminRemoved(indexed bytes32,indexed address)
+          handler: handleAdminRemoved
+        - event: MemberJoined(indexed bytes32,indexed address)
+          handler: handleMemberJoined
+        - event: MemberLeft(indexed bytes32,indexed address)
+          handler: handleMemberLeft
+        - event: SpaceCreated(indexed bytes32,string,string,indexed address)
+          handler: handleSpaceCreated
+        - event: SpaceDeactivated(indexed bytes32)
+          handler: handleSpaceDeactivated
+        - event: SpaceDisplayNameUpdated(indexed bytes32,string,indexed address)
+          handler: handleSpaceDisplayNameUpdated
+        - event: SpaceTransferred(indexed bytes32,indexed address,indexed address)
+          handler: handleSpaceTransferred
+        - event: WhitelistUpdated(indexed bytes32,indexed address,indexed bool)
+          handler: handleWhitelistUpdated
+      file: ./src/space-registry.ts
+  - kind: ethereum
+    name: PrivateProposal
+    network: sepolia
+    source:
+      address: "0x9bAe23C3e1fe248F0B99e4dE31F264eB73A92399"
+      abi: PrivateProposal
+      startBlock: 9707050
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.9
+      language: wasm/assemblyscript
+      entities:
+        - ProposalResolved
+        - PublicDecryptionVerified
+        - ReadyToReveal
+        - ResultsRevealed
+        - TallyRevealRequested
+        - TotalVotersUpdated
+        - VotePercentagesRevealed
+        - Voted
+      abis:
+        - name: PrivateProposal
+          file: ./abis/PrivateProposal.json
+      eventHandlers:
+        - event: ProposalResolved(indexed uint8,indexed bool)
+          handler: handleProposalResolved
+        - event: PublicDecryptionVerified(bytes32[],bytes)
+          handler: handlePublicDecryptionVerified
+        - event: ReadyToReveal(indexed uint256)
+          handler: handleReadyToReveal
+        - event: ResultsRevealed(uint256[])
+          handler: handleResultsRevealed
+        - event: TallyRevealRequested(bytes32[])
+          handler: handleTallyRevealRequested
+        - event: TotalVotersUpdated(indexed uint256)
+          handler: handleTotalVotersUpdated
+        - event: VotePercentagesRevealed(uint256[])
+          handler: handleVotePercentagesRevealed
+        - event: Voted(indexed address,indexed uint256)
+          handler: handleVoted
+      file: ./src/private-proposal.ts

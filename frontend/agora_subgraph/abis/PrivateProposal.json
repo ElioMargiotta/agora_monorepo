@@ -1,0 +1,521 @@
+[
+  {
+    "inputs": [
+      {
+        "components": [
+          { "internalType": "bytes32", "name": "spaceId", "type": "bytes32" },
+          { "internalType": "uint64", "name": "start", "type": "uint64" },
+          { "internalType": "uint64", "name": "end", "type": "uint64" },
+          {
+            "internalType": "address",
+            "name": "eligibilityToken",
+            "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "eligibilityThreshold",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "passingThreshold",
+            "type": "uint256"
+          },
+          {
+            "internalType": "enum ProposalType",
+            "name": "pType",
+            "type": "uint8"
+          },
+          {
+            "internalType": "enum EligibilityType",
+            "name": "eligibilityType",
+            "type": "uint8"
+          },
+          { "internalType": "bool", "name": "includeAbstain", "type": "bool" },
+          { "internalType": "string", "name": "title", "type": "string" },
+          { "internalType": "string", "name": "bodyURI", "type": "string" },
+          { "internalType": "string[]", "name": "choices", "type": "string[]" }
+        ],
+        "internalType": "struct CreateProposalParams",
+        "name": "params",
+        "type": "tuple"
+      },
+      { "internalType": "address", "name": "_spaceRegistry", "type": "address" }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "constructor"
+  },
+  { "inputs": [], "name": "AlreadyResolved", "type": "error" },
+  { "inputs": [], "name": "AlreadyVoted", "type": "error" },
+  { "inputs": [], "name": "AutoRevealTriggered", "type": "error" },
+  { "inputs": [], "name": "InsufficientTokenBalance", "type": "error" },
+  { "inputs": [], "name": "InvalidChoiceIndex", "type": "error" },
+  { "inputs": [], "name": "InvalidKMSSignatures", "type": "error" },
+  { "inputs": [], "name": "InvalidPercentageInputLength", "type": "error" },
+  { "inputs": [], "name": "InvalidProposalAddress", "type": "error" },
+  { "inputs": [], "name": "MissingPercentageProof", "type": "error" },
+  { "inputs": [], "name": "NoVotingPower", "type": "error" },
+  { "inputs": [], "name": "NotSpaceMember", "type": "error" },
+  { "inputs": [], "name": "OnlyFactory", "type": "error" },
+  { "inputs": [], "name": "ProposalEnded", "type": "error" },
+  { "inputs": [], "name": "ProposalNotStarted", "type": "error" },
+  { "inputs": [], "name": "ResultsAlreadyRevealed", "type": "error" },
+  { "inputs": [], "name": "RevealAlreadyRequested", "type": "error" },
+  { "inputs": [], "name": "RevealNotRequested", "type": "error" },
+  { "inputs": [], "name": "WrongProposalType", "type": "error" },
+  { "inputs": [], "name": "ZamaProtocolUnsupported", "type": "error" },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint8",
+        "name": "winningChoice",
+        "type": "uint8"
+      },
+      {
+        "indexed": true,
+        "internalType": "bool",
+        "name": "passed",
+        "type": "bool"
+      }
+    ],
+    "name": "ProposalResolved",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "bytes32[]",
+        "name": "handlesList",
+        "type": "bytes32[]"
+      },
+      {
+        "indexed": false,
+        "internalType": "bytes",
+        "name": "abiEncodedCleartexts",
+        "type": "bytes"
+      }
+    ],
+    "name": "PublicDecryptionVerified",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "timestamp",
+        "type": "uint256"
+      }
+    ],
+    "name": "ReadyToReveal",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "uint256[]",
+        "name": "choiceVotes",
+        "type": "uint256[]"
+      }
+    ],
+    "name": "ResultsRevealed",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "bytes32[]",
+        "name": "choiceVoteHandles",
+        "type": "bytes32[]"
+      }
+    ],
+    "name": "TallyRevealRequested",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "totalVoters",
+        "type": "uint256"
+      }
+    ],
+    "name": "TotalVotersUpdated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "uint256[]",
+        "name": "percentages",
+        "type": "uint256[]"
+      }
+    ],
+    "name": "VotePercentagesRevealed",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "user",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "timestamp",
+        "type": "uint256"
+      }
+    ],
+    "name": "Voted",
+    "type": "event"
+  },
+  {
+    "inputs": [],
+    "name": "autoRevealTriggered",
+    "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "bodyURI",
+    "outputs": [{ "internalType": "string", "name": "", "type": "string" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+    "name": "choiceVotes",
+    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "uint256", "name": "index", "type": "uint256" }
+    ],
+    "name": "choices",
+    "outputs": [{ "internalType": "string", "name": "", "type": "string" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "choicesLength",
+    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "confidentialProtocolId",
+    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "config",
+    "outputs": [
+      { "internalType": "bytes32", "name": "spaceId", "type": "bytes32" },
+      { "internalType": "string", "name": "title", "type": "string" },
+      { "internalType": "string", "name": "bodyURI", "type": "string" },
+      { "internalType": "enum ProposalType", "name": "pType", "type": "uint8" },
+      { "internalType": "uint64", "name": "start", "type": "uint64" },
+      { "internalType": "uint64", "name": "end", "type": "uint64" },
+      {
+        "internalType": "enum EligibilityType",
+        "name": "eligibilityType",
+        "type": "uint8"
+      },
+      {
+        "internalType": "address",
+        "name": "eligibilityToken",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "eligibilityThreshold",
+        "type": "uint256"
+      },
+      { "internalType": "address", "name": "creator", "type": "address" },
+      { "internalType": "uint256", "name": "snapshotBlock", "type": "uint256" }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "creator",
+    "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "eligibilityThreshold",
+    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "eligibilityToken",
+    "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "eligibilityType",
+    "outputs": [
+      { "internalType": "enum EligibilityType", "name": "", "type": "uint8" }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "end",
+    "outputs": [{ "internalType": "uint64", "name": "", "type": "uint64" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "factory",
+    "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "uint256", "name": "choiceIndex", "type": "uint256" }
+    ],
+    "name": "getEncryptedChoiceVotes",
+    "outputs": [{ "internalType": "euint32", "name": "", "type": "bytes32" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getVotePercentages",
+    "outputs": [
+      { "internalType": "uint256[]", "name": "", "type": "uint256[]" }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "address", "name": "user", "type": "address" }
+    ],
+    "name": "hasVoted",
+    "outputs": [{ "internalType": "bool", "name": "voted", "type": "bool" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "pType",
+    "outputs": [
+      { "internalType": "enum ProposalType", "name": "", "type": "uint8" }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "passingThreshold",
+    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [{ "internalType": "bytes", "name": "", "type": "bytes" }],
+    "name": "performUpkeep",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "proposalPassed",
+    "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "proposalResolved",
+    "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "proposalAddress",
+        "type": "address"
+      },
+      { "internalType": "bytes", "name": "cleartexts", "type": "bytes" },
+      { "internalType": "bytes", "name": "decryptionProof", "type": "bytes" }
+    ],
+    "name": "resolveProposalCallback",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "resultsRevealed",
+    "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "spaceId",
+    "outputs": [{ "internalType": "bytes32", "name": "", "type": "bytes32" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "spaceRegistry",
+    "outputs": [
+      {
+        "internalType": "contract ISpaceRegistry",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "start",
+    "outputs": [{ "internalType": "uint64", "name": "", "type": "uint64" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "statusFlags",
+    "outputs": [{ "internalType": "uint8", "name": "", "type": "uint8" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "timeUntilProposalEnds",
+    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "timeUntilProposalStarts",
+    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "title",
+    "outputs": [{ "internalType": "string", "name": "", "type": "string" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "totalVoters",
+    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "externalEuint8",
+        "name": "inputEuint8",
+        "type": "bytes32"
+      },
+      { "internalType": "bytes", "name": "inputProof", "type": "bytes" }
+    ],
+    "name": "voteNonweighted",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+    "name": "votePercentages",
+    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "externalEuint32[]",
+        "name": "percentageInputs",
+        "type": "bytes32[]"
+      },
+      {
+        "internalType": "externalEuint32",
+        "name": "encryptedTotal",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes",
+        "name": "totalPercentageProof",
+        "type": "bytes"
+      }
+    ],
+    "name": "voteWeightedFractional",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "externalEuint8",
+        "name": "inputEuint8",
+        "type": "bytes32"
+      },
+      { "internalType": "bytes", "name": "inputProof", "type": "bytes" }
+    ],
+    "name": "voteWeightedSingle",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "winningChoice",
+    "outputs": [{ "internalType": "uint8", "name": "", "type": "uint8" }],
+    "stateMutability": "view",
+    "type": "function"
+  }
+]

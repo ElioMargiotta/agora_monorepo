@@ -1,12 +1,12 @@
 "use client";
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAccount, useWriteContract } from 'wagmi';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Plus, Loader2, ChevronDown, Calendar, CheckCircle } from 'lucide-react';
+import { Plus, Loader2, ChevronDown, Calendar, CheckCircle, Minus } from 'lucide-react';
 
 // Import IPFS libraries
 import { createHelia } from 'helia';
@@ -24,12 +24,14 @@ export function CreateProposalDialog({ spaceId, spaceName }) {
     title: '',
     description: '',
     pType: 0, // Default to NonWeightedSingleChoice
-    choices: ['For', 'Against', 'Abstain'],
+    choices: ['Yes', 'No'], // Start with 2 basic options
     start: '',
     end: '',
     eligibilityType: 0, // Default to Public
     eligibilityToken: process.env.NEXT_PUBLIC_MOCK_GOVERNANCE_TOKEN_ADDRESS || '0x0000000000000000000000000000000000000000',
-    eligibilityThreshold: '1'
+    eligibilityThreshold: '1',
+    passingThreshold: '50', // Default 50% for passing threshold
+    includeAbstain: true // Default to include abstain option
   });
 
   const { address } = useAccount();
@@ -143,9 +145,55 @@ export function CreateProposalDialog({ spaceId, spaceName }) {
           // Token Holder: allow weighted types, set default threshold to 1
           newData.eligibilityThreshold = '1';
         }
+      } else if (field === 'includeAbstain') {
+        // Adjust choices count when abstain option changes
+        const maxChoices = value ? 9 : 10;
+        if (newData.choices.length > maxChoices) {
+          newData.choices = newData.choices.slice(0, maxChoices);
+        }
       }
       return newData;
     });
+  };
+
+  const handleChoiceChange = (index, value) => {
+    setFormData(prev => ({
+      ...prev,
+      choices: prev.choices.map((choice, i) => i === index ? value : choice)
+    }));
+  };
+
+  const addChoice = () => {
+    const maxChoices = formData.includeAbstain ? 9 : 10; // Leave room for abstain if included
+    if (formData.choices.length < maxChoices) {
+      setFormData(prev => ({
+        ...prev,
+        choices: [...prev.choices, `Option ${prev.choices.length + 1}`]
+      }));
+    }
+  };
+
+  const removeChoice = (index) => {
+    if (formData.choices.length > 2) { // Keep at least 2 options
+      setFormData(prev => ({
+        ...prev,
+        choices: prev.choices.filter((_, i) => i !== index)
+      }));
+    }
+  };
+
+  // Get the final choices array (contract handles abstain if includeAbstain is true)
+  const getFinalChoices = () => {
+    return [...formData.choices];
+  };
+
+  // Get choices for display (including abstain preview)
+  const getDisplayChoices = () => {
+    const choices = [...formData.choices];
+    if (formData.includeAbstain) {
+      choices.push('Abstain');
+    }
+    return choices;
   };
 
   const handleSubmit = async (e) => {
@@ -176,6 +224,12 @@ export function CreateProposalDialog({ spaceId, spaceName }) {
       return;
     }
 
+    // Validate passing threshold
+    if (isNaN(formData.passingThreshold) || parseFloat(formData.passingThreshold) < 1 || parseFloat(formData.passingThreshold) > 100) {
+      alert('Passing threshold must be a percentage between 1 and 100');
+      return;
+    }
+
     // Upload description to IPFS
     let bodyURI;
     try {
@@ -187,15 +241,17 @@ export function CreateProposalDialog({ spaceId, spaceName }) {
 
     const params = {
       spaceId: spaceId,
-      title: formData.title,
-      bodyURI: bodyURI,
-      pType: formData.pType,
-      choices: formData.choices,
       start: Math.floor(startTimestamp / 1000),
       end: Math.floor(endTimestamp / 1000),
-      eligibilityType: formData.eligibilityType,
       eligibilityToken: formData.eligibilityToken,
       eligibilityThreshold: BigInt(formData.eligibilityThreshold),
+      passingThreshold: BigInt(formData.passingThreshold),
+      pType: formData.pType,
+      eligibilityType: formData.eligibilityType,
+      includeAbstain: formData.includeAbstain,
+      title: formData.title,
+      bodyURI: bodyURI,
+      choices: getFinalChoices(),
     };
 
     writeContract({
@@ -207,18 +263,20 @@ export function CreateProposalDialog({ spaceId, spaceName }) {
   };
 
   // Reset form and close dialog on success
-  React.useEffect(() => {
+  useEffect(() => {
     if (txSuccess) {
       setFormData({
         title: '',
         description: '',
         pType: 0,
-        choices: ['For', 'Against', 'Abstain'],
+        choices: ['Yes', 'No'],
         start: '',
         end: '',
         eligibilityType: 0,
         eligibilityToken: process.env.NEXT_PUBLIC_MOCK_GOVERNANCE_TOKEN_ADDRESS || '0x0000000000000000000000000000000000000000',
-        eligibilityThreshold: '1'
+        eligibilityThreshold: '1',
+        passingThreshold: '50',
+        includeAbstain: true
       });
       setShowSuccess(true);
       // Auto-hide success message after 3 seconds
@@ -451,6 +509,87 @@ export function CreateProposalDialog({ spaceId, spaceName }) {
               </div>
             </>
           )}
+
+          <div>
+            <Label htmlFor="passingThreshold" className="text-black">Passing Threshold (%)</Label>
+            <Input
+              id="passingThreshold"
+              type="number"
+              value={formData.passingThreshold}
+              onChange={(e) => handleInputChange('passingThreshold', e.target.value)}
+              placeholder="50"
+              min="1"
+              max="100"
+              className="bg-white/50 border-[#E8DCC4]/30"
+            />
+            <p className="text-xs text-gray-600 mt-1">Percentage of votes required for proposal to pass</p>
+          </div>
+
+          <div className="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              id="includeAbstain"
+              checked={formData.includeAbstain}
+              onChange={(e) => handleInputChange('includeAbstain', e.target.checked)}
+              className="rounded border-[#E8DCC4]/30"
+            />
+            <Label htmlFor="includeAbstain" className="text-black">Include Abstain option</Label>
+          </div>
+
+          <div>
+            <Label className="text-black">Proposal Choices</Label>
+            <div className="space-y-2 mt-2">
+              {getDisplayChoices().map((choice, index) => (
+                <div key={index} className="flex items-center gap-2">
+                  {index < formData.choices.length ? (
+                    <>
+                      <Input
+                        value={choice}
+                        onChange={(e) => handleChoiceChange(index, e.target.value)}
+                        placeholder={`Choice ${index + 1}`}
+                        className="bg-white/50 border-[#E8DCC4]/30 flex-1"
+                      />
+                      {formData.choices.length > 2 && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => removeChoice(index)}
+                          className="border-red-300 text-red-600 hover:bg-red-50"
+                        >
+                          <Minus className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </>
+                  ) : (
+                    <div className="flex items-center gap-2 flex-1">
+                      <Input
+                        value={choice}
+                        readOnly
+                        className="bg-gray-100 border-[#E8DCC4]/30 flex-1"
+                      />
+                      <span className="text-sm text-gray-500">(Abstain option)</span>
+                    </div>
+                  )}
+                </div>
+              ))}
+              {(formData.includeAbstain ? getDisplayChoices().length < 9 : getDisplayChoices().length < 10) && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={addChoice}
+                  className="border-[#4D89B0] text-[#4D89B0] hover:bg-[#4D89B0] hover:text-white"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Choice
+                </Button>
+              )}
+              <p className="text-xs text-gray-600">
+                {getDisplayChoices().length}/10 choices {formData.includeAbstain && '(including abstain)'}
+              </p>
+            </div>
+          </div>
 
           {writeError && (
             <div className="text-sm text-red-600 p-2 bg-red-50 rounded border border-red-200">

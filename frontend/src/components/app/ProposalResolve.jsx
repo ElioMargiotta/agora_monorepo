@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { ethers } from 'ethers';
+import { useReadContract } from 'wagmi';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import PrivateProposalABI from '@/abis/PrivateProposal.json';
@@ -13,6 +14,16 @@ export default function ProposalResolve({ proposal, signer, fheInitialized, curr
 
   // ✅ Dépendances stables
   const proposalAddress = proposal?.proposal ?? null;
+
+  // Get choices length from contract
+  const { data: choicesLengthData } = useReadContract({
+    address: proposalAddress,
+    abi: PrivateProposalABI.abi,
+    functionName: 'choicesLength',
+    enabled: !!proposalAddress
+  });
+
+  const choicesLength = choicesLengthData ? Number(choicesLengthData) : 0;
 
   // ✅ garde-fous anti-rafale
   const inFlightRef = useRef(false);
@@ -69,12 +80,25 @@ export default function ProposalResolve({ proposal, signer, fheInitialized, curr
   }, [publicProvider, proposalAddress]); // ✅ plus de dépendance sur l’objet proposal entier
 
   // Handle TallyRevealRequested event
-  const handleTallyRevealRequested = useCallback(async (encryptedHandles) => {
+  const handleTallyRevealRequested = useCallback(async (handles, event) => {
+    console.log('TallyRevealRequested event received:', handles?.length, 'handles for contract:', event?.args?.contractAddress);
     if (!signer || !proposal || !fheInitialized) return;
 
     try {
       const proposalAddress = proposal.proposal;
-      const { cleartexts, decryptionProof } = await decryptMultipleHandles(proposalAddress, signer, encryptedHandles);
+      // Decrypt the handles via API
+      const response = await fetch('/api/decrypt', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contractAddress: proposalAddress, handles })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Decryption failed');
+      }
+
+      const { cleartexts, decryptionProof } = await response.json();
 
       // Submit to contract for on-chain verification
       const proposalContract = new ethers.Contract(proposalAddress, PrivateProposalABI.abi, signer);
@@ -111,7 +135,7 @@ export default function ProposalResolve({ proposal, signer, fheInitialized, curr
 
       // Get encrypted handles for each choice
       const handles = [];
-      for (let i = 0; i < proposal.p_choices.length; i++) {
+      for (let i = 0; i < choicesLength; i++) {
         const handle = await proposalContract.getEncryptedChoiceVotes(i);
         handles.push(handle);
       }
@@ -161,28 +185,24 @@ export default function ProposalResolve({ proposal, signer, fheInitialized, curr
     const proposalAddress = proposal.proposal;
     const proposalContract = new ethers.Contract(proposalAddress, PrivateProposalABI.abi, publicProvider);
 
-    // Set up event listener - disabled for manual resolution only
-    // const setupListener = () => {
-    //   try {
-    //     proposalContract.on('TallyRevealRequested', handleTallyRevealRequested);
-    //   } catch (error) {
-    //     if (error.message.includes('Too Many Requests')) {
-    //       console.warn('Rate limited setting up event listener, skipping for now.');
-    //     } else {
-    //       console.error('Failed to set up event listener:', error);
-    //     }
-    //   }
-    // };
-    // setupListener();
+    const setupListener = () => {
+      try {
+        proposalContract.on('TallyRevealRequested', handleTallyRevealRequested);
+        console.log('Event listener set up for TallyRevealRequested');
+      } catch (error) {
+        if (error.message.includes('Too Many Requests')) {
+          console.warn('Rate limited setting up event listener, skipping for now.');
+        } else {
+          console.error('Failed to set up event listener:', error);
+        }
+      }
+    };
+    setupListener();
 
-    // Also check for past events - disabled for manual resolution only
-    // const checkPastEvents = async () => {
-    //   ... (removed)
-    // };
-    // checkPastEvents();
-
-    // Removed return and cleanup since listeners are disabled
-  }, []);
+    return () => {
+      proposalContract.off('TallyRevealRequested', handleTallyRevealRequested);
+    };
+  }, [publicProvider, proposal, handleTallyRevealRequested]);
 
   // ✅ effet déclenché seulement quand l'adresse/provider change
   useEffect(() => {

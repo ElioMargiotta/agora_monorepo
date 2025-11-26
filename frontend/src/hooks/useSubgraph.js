@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { gql, request } from 'graphql-request';
 
 // Subgraph endpoint
-const SUBGRAPH_URL = process.env.NEXT_PUBLIC_SUBGRAPH_URL || 'https://api.studio.thegraph.com/query/1715807/agora-sub/0.0.5';
+const SUBGRAPH_URL = process.env.NEXT_PUBLIC_SUBGRAPH_URL || 'https://api.studio.thegraph.com/query/1715807/agora-sub/0.0.6';
 
 // GraphQL queries
 const GET_SPACES_BY_OWNER = gql`
@@ -179,11 +179,10 @@ const GET_PROPOSAL_BY_ID = gql`
 
 const GET_VOTES_BY_PROPOSAL = gql`
   query GetVotesByProposal($proposalId: Bytes!) {
-    votes(where: { proposalId: $proposalId }) {
+    votes: voteds {
       id
-      proposalId
-      voter
-      choice
+      user
+      timestamp
       blockNumber
       blockTimestamp
       transactionHash
@@ -193,17 +192,15 @@ const GET_VOTES_BY_PROPOSAL = gql`
 
 const GET_USER_VOTES = gql`
   query GetUserVotes($voter: Bytes!) {
-    votes(
-      where: { voter: $voter }
+    votes: voteds(
+      where: { user: $voter }
       orderBy: blockTimestamp
       orderDirection: desc
       first: 20
     ) {
       id
-      proposalId
-      voter
-      choice
-      weight
+      user
+      timestamp
       blockNumber
       blockTimestamp
       transactionHash
@@ -335,7 +332,7 @@ export function useSpaceByEns(ensName, enabled = true) {
     queryKey: ['spaceByEns', ensName],
     queryFn: async () => {
       if (!ensName) return null;
-      const normalizedEns = ensName.endsWith('.eth') ? ensName : `${ensName}.eth`;
+      const normalizedEns = ensName.endsWith('.agora') ? ensName : `${ensName}.agora`;
       const result = await request(SUBGRAPH_URL, GET_SPACE_BY_ENS, { ensName: normalizedEns });
       // Transform spaceCreateds to spaces format
       return {

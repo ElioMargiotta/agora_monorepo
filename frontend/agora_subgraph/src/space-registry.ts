@@ -7,7 +7,7 @@ import {
   SpaceDeactivated as SpaceDeactivatedEvent,
   SpaceDisplayNameUpdated as SpaceDisplayNameUpdatedEvent,
   SpaceTransferred as SpaceTransferredEvent,
-  WhitelistUpdated as WhitelistUpdatedEvent
+  WhitelistUpdated as WhitelistUpdatedEvent,
 } from "../generated/SpaceRegistry/SpaceRegistry"
 import {
   AdminAdded,
@@ -18,12 +18,12 @@ import {
   SpaceDeactivated,
   SpaceDisplayNameUpdated,
   SpaceTransferred,
-  WhitelistUpdated
+  WhitelistUpdated,
 } from "../generated/schema"
 
 export function handleAdminAdded(event: AdminAddedEvent): void {
   let entity = new AdminAdded(
-    event.transaction.hash.concatI32(event.logIndex.toI32())
+    event.transaction.hash.concatI32(event.logIndex.toI32()),
   )
   entity.spaceId = event.params.spaceId
   entity.admin = event.params.admin
@@ -37,7 +37,7 @@ export function handleAdminAdded(event: AdminAddedEvent): void {
 
 export function handleAdminRemoved(event: AdminRemovedEvent): void {
   let entity = new AdminRemoved(
-    event.transaction.hash.concatI32(event.logIndex.toI32())
+    event.transaction.hash.concatI32(event.logIndex.toI32()),
   )
   entity.spaceId = event.params.spaceId
   entity.admin = event.params.admin
@@ -51,7 +51,7 @@ export function handleAdminRemoved(event: AdminRemovedEvent): void {
 
 export function handleMemberJoined(event: MemberJoinedEvent): void {
   let entity = new MemberJoined(
-    event.transaction.hash.concatI32(event.logIndex.toI32())
+    event.transaction.hash.concatI32(event.logIndex.toI32()),
   )
   entity.spaceId = event.params.spaceId
   entity.member = event.params.member
@@ -65,7 +65,7 @@ export function handleMemberJoined(event: MemberJoinedEvent): void {
 
 export function handleMemberLeft(event: MemberLeftEvent): void {
   let entity = new MemberLeft(
-    event.transaction.hash.concatI32(event.logIndex.toI32())
+    event.transaction.hash.concatI32(event.logIndex.toI32()),
   )
   entity.spaceId = event.params.spaceId
   entity.member = event.params.member
@@ -79,7 +79,7 @@ export function handleMemberLeft(event: MemberLeftEvent): void {
 
 export function handleSpaceCreated(event: SpaceCreatedEvent): void {
   let entity = new SpaceCreated(
-    event.transaction.hash.concatI32(event.logIndex.toI32())
+    event.transaction.hash.concatI32(event.logIndex.toI32()),
   )
   entity.spaceId = event.params.spaceId
   entity.ensName = event.params.ensName
@@ -95,7 +95,7 @@ export function handleSpaceCreated(event: SpaceCreatedEvent): void {
 
 export function handleSpaceDeactivated(event: SpaceDeactivatedEvent): void {
   let entity = new SpaceDeactivated(
-    event.transaction.hash.concatI32(event.logIndex.toI32())
+    event.transaction.hash.concatI32(event.logIndex.toI32()),
   )
   entity.spaceId = event.params.spaceId
 
@@ -107,10 +107,10 @@ export function handleSpaceDeactivated(event: SpaceDeactivatedEvent): void {
 }
 
 export function handleSpaceDisplayNameUpdated(
-  event: SpaceDisplayNameUpdatedEvent
+  event: SpaceDisplayNameUpdatedEvent,
 ): void {
   let entity = new SpaceDisplayNameUpdated(
-    event.transaction.hash.concatI32(event.logIndex.toI32())
+    event.transaction.hash.concatI32(event.logIndex.toI32()),
   )
   entity.spaceId = event.params.spaceId
   entity.newDisplayName = event.params.newDisplayName
@@ -125,7 +125,7 @@ export function handleSpaceDisplayNameUpdated(
 
 export function handleSpaceTransferred(event: SpaceTransferredEvent): void {
   let entity = new SpaceTransferred(
-    event.transaction.hash.concatI32(event.logIndex.toI32())
+    event.transaction.hash.concatI32(event.logIndex.toI32()),
   )
   entity.spaceId = event.params.spaceId
   entity.previousOwner = event.params.previousOwner
@@ -140,7 +140,7 @@ export function handleSpaceTransferred(event: SpaceTransferredEvent): void {
 
 export function handleWhitelistUpdated(event: WhitelistUpdatedEvent): void {
   let entity = new WhitelistUpdated(
-    event.transaction.hash.concatI32(event.logIndex.toI32())
+    event.transaction.hash.concatI32(event.logIndex.toI32()),
   )
   entity.spaceId = event.params.spaceId
   entity.user = event.params.user

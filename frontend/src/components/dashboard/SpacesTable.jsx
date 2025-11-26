@@ -18,13 +18,11 @@ import {
   Shield,
   User,
   Eye,
-  Plus,
   Calendar,
   Users,
   FileText,
   AlertCircle
 } from 'lucide-react';
-import { CreateProposalDialog } from '@/components/dashboard/CreateProposalDialog';
 import { useProposalsBySpaces } from '@/hooks/useSubgraph';
 
 function getRoleIcon(role) {
@@ -161,17 +159,11 @@ function SpaceRow({ space, onToggleExpand, isExpanded, proposalsData, proposalsL
         </td>
         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
           <div className="flex items-center justify-end gap-2">
-            <Link href={`/app/${space.ensName.replace('.eth', '')}`}>
+            <Link href={`/app/${space.ensName.replace('.agora', '')}`}>
               <Button variant="ghost" size="sm" className="text-[#4D89B0] hover:text-white border border-[#4D89B0] hover:bg-[#4D89B0] transition-colors">
                 <Eye className="h-4 w-4" />
               </Button>
             </Link>
-            {space.role === 'owner' || space.role === 'admin' ? (
-              <CreateProposalDialog
-                spaceId={space.spaceId}
-                spaceName={space.displayName}
-              />
-            ) : null}
           </div>
         </td>
       </tr>
@@ -215,12 +207,6 @@ function SpaceDetails({ space, proposalsData, proposalsLoading }) {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h4 className="text-lg font-medium text-black">Recent Proposals</h4>
-        {space.role !== 'member' && (
-          <CreateProposalDialog
-            spaceId={space.spaceId}
-            spaceName={space.displayName}
-          />
-        )}
       </div>
 
       {proposalsLoading ? (
@@ -264,7 +250,7 @@ function SpaceDetails({ space, proposalsData, proposalsLoading }) {
           </div>
 
           <div className="flex justify-center pt-4">
-            <Link href={`/app/${space.ensName ? space.ensName.replace('.eth', '') : space.displayName}`}>
+            <Link href={`/app/${space.ensName ? space.ensName.replace('.agora', '') : space.displayName}`}>
               <Button variant="outline" size="sm" className="border-[#4D89B0] text-black hover:bg-[#4D89B0] hover:text-white">
                 View All Proposals
               </Button>
@@ -274,14 +260,6 @@ function SpaceDetails({ space, proposalsData, proposalsLoading }) {
       ) : (
         <div className="text-center py-8">
           <p className="text-black">No proposals yet.</p>
-          {space.role !== 'member' && (
-            <div className="mt-4">
-              <CreateProposalDialog
-                spaceId={space.spaceId}
-                spaceName={space.displayName}
-              />
-            </div>
-          )}
         </div>
       )}
     </div>
