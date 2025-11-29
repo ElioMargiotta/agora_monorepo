@@ -231,15 +231,6 @@ const SPACE_REGISTRY_ADDRESS = process.env.NEXT_PUBLIC_SPACE_REGISTRY_ADDRESS;  
                     </>
                   ) : isMember ? (
                     <Badge variant="outline" className="border-[#4D89B0] text-[#4D89B0]">Member</Badge>
-                  ) : isConnected ? (
-                    <Button
-                      size="sm"
-                      onClick={handleJoinSpace}
-                      disabled={isTxPending || isConfirming}
-                      className="bg-[#4D89B0] hover:bg-[#4D89B0]/90 text-white cursor-pointer"
-                    >
-                      {isTxPending || isConfirming ? 'Joining...' : 'Join Space'}
-                    </Button>
                   ) : null}
                   <Button
                     variant="ghost"
@@ -282,7 +273,7 @@ const SPACE_REGISTRY_ADDRESS = process.env.NEXT_PUBLIC_SPACE_REGISTRY_ADDRESS;  
 
           {/* Space Content */}
           <div className="space-y-6">
-            {/* Proposals Section - Visible to everyone */}
+            {/* Proposals Section */}
             <div>
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-semibold text-black">All Proposals</h2>
@@ -296,13 +287,38 @@ const SPACE_REGISTRY_ADDRESS = process.env.NEXT_PUBLIC_SPACE_REGISTRY_ADDRESS;  
                 </Button>
               </div>
               {showProposals && (
-                <ProposalTable
-                  proposals={proposalsData?.proposalCreateds || []}
-                  loading={proposalsLoading}
-                  error={proposalsError}
-                  spaceName={spaceName}
-                  title=""
-                />
+                <>
+                  {(isMember || isAdmin || isOwner) ? (
+                    <ProposalTable
+                      proposals={proposalsData?.proposalCreateds || []}
+                      loading={proposalsLoading}
+                      error={proposalsError}
+                      spaceName={spaceName}
+                      title=""
+                    />
+                  ) : (
+                    <Card className="bg-white/80 border-[#E8DCC4]/30">
+                      <CardContent className="flex flex-col items-center justify-center py-12">
+                        <Users className="h-12 w-12 text-[#4D89B0]/60 mb-4" />
+                        <h3 className="text-lg font-semibold text-black mb-2">Join Space to View Proposals</h3>
+                        <p className="text-sm text-black/70 text-center mb-4">
+                          You need to be a member of this space to view and participate in proposals.
+                        </p>
+                        {isConnected ? (
+                          <Button
+                            onClick={handleJoinSpace}
+                            disabled={isTxPending || isConfirming}
+                            className="bg-[#4D89B0] hover:bg-[#4D89B0]/90 text-white cursor-pointer"
+                          >
+                            {isTxPending || isConfirming ? 'Joining...' : 'Join Space'}
+                          </Button>
+                        ) : (
+                          <p className="text-sm text-black/70">Connect your wallet to join this space.</p>
+                        )}
+                      </CardContent>
+                    </Card>
+                  )}
+                </>
               )}
             </div>
 

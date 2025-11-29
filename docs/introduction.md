@@ -34,27 +34,36 @@ The core purpose of Agora is to democratize governance by solving the fundamenta
 
 ## How It Works
 
-### 1. Create Your Agora Space
-Connect your Web3 wallet and establish a new governance space with custom parameters:
-- Joining eligibility (token holders, NFT owners, or public access)
+### 1. Visit the Agora Website
+Start by visiting [https://agora-staged.vercel.app/](https://agora-staged.vercel.app/) and connect your Web3 wallet.
 
-### 2. Invite Your Community
+### 2. Create an Agora Name Service
+Register a unique `.agora` domain name that will serve as your governance space identifier. This creates a decentralized naming system for your community.
+
+### 3. Create Your Governance Space
+Use your registered `.agora` name to establish a new governance space with custom parameters:
+- Set membership rules (public, token holders, NFT owners, or whitelist)
+- Configure voting models and eligibility criteria
+- Define space roles and permissions
+
+### 4. Invite Your Community
 Share access with community members and assign appropriate roles:
 - Owner: Full control over space settings
 - Admin: Can create new proposals
 - Member: Can participate in voting
 - Observer: Read-only access to proposals and results
 
-### 3. Create Private Proposals
+### 5. Create Private Proposals
 Submit governance proposals with complete privacy guarantees:
 - Rich text descriptions and multimedia attachments
 - Configurable voting periods and parameters
 - Automated workflow management via Chainlink
 
-### 4. Vote Anonymously, Reveal Verifiable Results
+### 6. Vote Anonymously, Reveal Verifiable Results
 Participate in governance with full privacy:
 - Cast encrypted votes using FHE technology
 - Maintain anonymity throughout the voting process
+- View transparent, verifiable outcomes
 
 ## Technology Stack
 
@@ -113,15 +122,11 @@ frontend/
 - Web3 wallet (MetaMask, Rainbow, etc.)
 - Access to Ethereum testnet
 
-### Installation
-```bash
-git clone https://github.com/ElioMargiotta/agora_monorepo.git
-cd agora_monorepo/frontend/frontend
-npm install
-npm run dev
-```
+### Quick Start
+1. **Visit the Agora website**: [https://agora-staged.vercel.app/](https://agora-staged.vercel.app/)
 
-Visit `http://localhost:3000` to access the application.
+### Local Development Setup
+For detailed setup instructions, environment configuration, and deployment guides, see [Frontend Documentation](./frontend.md).
 
 ## Future Roadmap
 
@@ -143,7 +148,7 @@ Visit `http://localhost:3000` to access the application.
 - **[Chainlink](https://chainlink.com/)**: For decentralized automation infrastructure
 - **[The Graph](https://thegraph.com/)**: For decentralized data indexing
 - **[OpenZeppelin](https://openzeppelin.com/)**: For secure smart contract libraries and standards
-- **[chriswilder](https://github.com/0xchriswilder)** For the fhevm.ts file and his availability
+- **[chriswilder](https://github.com/0xchriswilder/fhevm-react-template/blob/main/packages/fhevm-sdk/src/core/fhevm.ts)** For the fhevm.ts file and his availability
 - **Open Source Community**: For the tools and libraries that make this possible
 
 ---

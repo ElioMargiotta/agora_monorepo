@@ -23,7 +23,19 @@ The frontend component of Agora is a Next.js web application that provides the u
    npm install
    ```
 
-3. **Start the development server**
+3. **Set up environment variables**
+   
+   Copy the `local.example` file to `.env.local` and update the values with your own credentials:
+   
+   ```bash
+   cp local.example .env.local
+   ```
+   
+   Edit `.env.local` and fill in the required values. It is mandatory to edit the Infura and Pinata credentials; the other values can be used as provided in the example. Please refer to the documentation of Pinata and Infura to create your own credentials.
+
+
+
+4. **Start the development server**
    ```bash
    npm run dev
    ```
@@ -35,12 +47,12 @@ Open [http://localhost:3000](http://localhost:3000) to view the application.
 ### Tech Stack
 
 - **Frontend**: Next.js 15, React 19, Tailwind CSS
-- **Blockchain**: Ethereum, Solidity smart contracts
+- **Blockchain**: EVM, Solidity smart contracts
 - **Indexing**: The Graph protocol for subgraph queries
 - **Deployment**: Hardhat development environment
 - **Encryption**: Zama FHE (@zama-fhe/relayer-sdk)
-- **Wallet**: RainbowKit, Wagmi, Coinbase OnchainKit
-- **Automation**: Chainlink oracles
+- **Wallet**: RainbowKit, Wagmi
+- **Automation**: Chainlink
 - **UI Components**: Radix UI, Framer Motion animations
 
 ### Project Structure
@@ -99,11 +111,15 @@ The governance system utilizes several Solidity smart contracts deployed with Ha
 - `PrivateProposal.sol`: Handles encrypted proposal voting logic
 - `MockGouvernanceToken.sol`: ERC-20 token for voting eligibility
 
+For detailed contract architecture and FHE implementation, see [Contract Architecture](./contract.md).
+
+
 ### Subgraphs
 
 The platform uses The Graph protocol for efficient on-chain data indexing:
 - `agora-sub/`: Subgraph for Agora-related events
-- `subgraph/`: Main subgraph for spaces, proposals, and voting events
+
+For local development, you can run your own subgraph node instead of using the hosted service. Refer to [The Graph documentation](https://thegraph.com/docs/) for setup instructions.
 
 ## Development
 
@@ -114,9 +130,6 @@ The platform uses The Graph protocol for efficient on-chain data indexing:
 - `npm run start` - Start production server
 - `npm run lint` - Run ESLint
 - `npm run test` - Run Vitest tests
-- `npx hardhat compile` - Compile Solidity smart contracts
-- `npx hardhat test` - Run smart contract tests
-- `npx hardhat deploy` - Deploy contracts to network
 
 ### Environment Setup
 
@@ -145,3 +158,7 @@ npm run test -- --coverage
 - [Wagmi Documentation](https://wagmi.sh/)
 - [Chainlink Documentation](https://docs.chain.link/)
 - [The Graph Documentation](https://thegraph.com/docs/)
+
+## 🙏 Acknowledgments
+
+- [Chriswilder](https://github.com/0xchriswilder/fhevm-react-template/blob/main/packages/fhevm-sdk/src/core/fhevm.ts) for providing the initial skeleton of the `fhevm.ts` file

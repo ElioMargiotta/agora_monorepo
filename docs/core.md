@@ -113,9 +113,6 @@ For detailed information about deployment tasks, see [Proposal Deployment Task](
 
 ## Documentation
 
-- [AGORA System Documentation](../core/documentation.md) - Detailed technical docs
-- [Test Summary](../core/test-summary.md) - Summary of tests performed
-- [Deployment Details](../core/deploy.md) - Deployed contracts and deployment process
-- [Proposal Deployment Task](../core/task_deploy_proposal.md) - Details on deploying proposals
-- [FHEVM Documentation](https://docs.zama.ai/fhevm)
-- [FHEVM Hardhat Setup](https://docs.zama.ai/protocol/solidity-guides/getting-started/setup)
+- [Chainlink Documentation](https://docs.chain.link/) - Smart contract automation and oracles
+- [Zama FHE Documentation](https://docs.zama.ai/) - Fully Homomorphic Encryption for blockchain
+- [OpenZeppelin Documentation](https://docs.openzeppelin.com/) - Secure smart contract development

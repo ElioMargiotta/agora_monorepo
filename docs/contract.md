@@ -1,4 +1,4 @@
-# 🏗️ Contract Architecture
+# Contract Architecture
 
 ## Interface Contracts
 
@@ -59,7 +59,7 @@ Proposal resolution is automated using Chainlink Automation to ensure timely dec
 
 3. **Decryption Request**: The emitted handles are sent to the FHE decryption service (via a frontend relayer). The service decrypts the aggregated vote counts for each choice. 
 
-Further development objectives include automating the off-chain decryption step to eliminate manual intervention. Currently, one user needs to request proposal resolution by triggering the decryption service after the upkeep is performed. Future iterations will integrate this into the Chainlink Automation workflow or use dedicated oracles for seamless, fully automated resolution.
+> **Note**: Further development objectives include automating the off-chain decryption step to eliminate manual intervention. Currently, one user needs to request proposal resolution by triggering the decryption service after the upkeep is performed. Future iterations will integrate this into the Chainlink Automation workflow or use dedicated oracles for seamless, fully automated resolution.
 
 4. **Callback Resolution**: The decrypted results are passed back via `resolveProposalCallback()`, which verifies the decryption proofs using `FHE.checkSignatures()`. It then:
    - Stores decrypted vote counts in `choiceVotes`

@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation';
 import { useAccount, useWalletClient, useReadContract, useContractReads } from 'wagmi';
 import { ethers } from 'ethers';
 import { initializeFheInstance, createEncryptedInput, decryptMultipleHandles, createEncryptedPercentages } from '@/lib/fhevm';
-import { useProposalById } from '@/hooks/useSubgraph';
+import { useProposalById, useAdminSpaceIds, useMemberSpaceIds, useSpaceByEns } from '@/hooks/useSubgraph';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -47,6 +47,9 @@ export default function ProposalVotePage() {
   const [descriptionLoading, setDescriptionLoading] = useState(false);
   const [voteMessage, setVoteMessage] = useState('');
   const [voteMessageType, setVoteMessageType] = useState(''); // 'success' or 'error'
+  const [isMember, setIsMember] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [isOwner, setIsOwner] = useState(false);
 
   // Update current time every second for live countdown
   useEffect(() => {
@@ -84,10 +87,35 @@ export default function ProposalVotePage() {
   const proposalIdBytes32 = proposal_id;
 
   const { data: proposalData, isLoading, error } = useProposalById(proposalIdBytes32);
+  const { data: adminSpaceIdsData, isLoading: adminSpaceIdsLoading, error: adminSpaceIdsError } = useAdminSpaceIds(address, isConnected);
+  const { data: memberSpaceIdsData, isLoading: memberSpaceIdsLoading, error: memberSpaceIdsError } = useMemberSpaceIds(address, isConnected);
+  const { data: spaceData, isLoading: spaceLoading, error: spaceError } = useSpaceByEns(space_name);
 
   const proposal = proposalData?.proposalCreateds?.[0];
   const pType = proposal?.p_pType || 0;
   const eligibilityToken = proposal?.p_eligibilityToken;
+
+  // Set isOwner when we have space data
+  useEffect(() => {
+    if (!spaceData?.spaces?.[0]) return;
+    setIsOwner(spaceData.spaces[0].owner.toLowerCase() === address?.toLowerCase());
+  }, [spaceData, address]);
+
+  // Set isAdmin when we have space data and admin event data
+  useEffect(() => {
+    if (!spaceData?.spaces?.[0] || !adminSpaceIdsData?.adminAddeds) return;
+    const spaceId = spaceData.spaces[0].spaceId;
+    const isAdminNow = adminSpaceIdsData.adminAddeds.some(a => a.spaceId === spaceId);
+    setIsAdmin(isAdminNow);
+  }, [spaceData, adminSpaceIdsData]);
+
+  // Set isMember when we have space data and member space IDs
+  useEffect(() => {
+    if (!spaceData?.spaces?.[0] || !memberSpaceIdsData?.memberJoineds) return;
+    const spaceId = spaceData.spaces[0].spaceId;
+    const isMemberNow = memberSpaceIdsData.memberJoineds.some(m => m.spaceId === spaceId);
+    setIsMember(isMemberNow);
+  }, [spaceData, memberSpaceIdsData]);
 
   // Memoize proposal for stability
   const proposalStable = useMemo(() => proposal, [proposal]);
@@ -124,7 +152,7 @@ export default function ProposalVotePage() {
 
   // Determine current state
   const getCurrentState = () => {
-    if (isLoading || !proposal) return 'loading';
+    if (isLoading || spaceLoading || !proposal) return 'loading';
     if (isBeforeStart) return 'upcoming';
     if (isDuring) return 'voting';
     return 'ended';
@@ -219,7 +247,7 @@ export default function ProposalVotePage() {
   });
 
   const votingPower = pType === 0 ? 1 : (votingPowerData ? Number(votingPowerData) : 0);
-  const isEligible = pType === 0 || votingPower > 0;
+  const isEligible = (pType === 0 || votingPower > 0) && (isMember || isAdmin || isOwner);
   const totalPercentage = Object.values(percentages).reduce((sum, val) => sum + (parseInt(val) || 0), 0);
 
   // Update hasVoted state
@@ -440,7 +468,7 @@ export default function ProposalVotePage() {
     );
   }
 
-  if (error || !proposal) {
+  if (error || spaceError || !proposal) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-white via-[#E8DCC4]/20 to-white">
         <div className="container mx-auto px-4 py-8">
@@ -908,7 +936,12 @@ export default function ProposalVotePage() {
                       </div>
                     ) : (
                       <div className="p-4 bg-red-50 rounded-lg">
-                        <p className="text-red-700">You are not eligible to vote.</p>
+                        <p className="text-red-700">
+                          {!isMember && !isAdmin && !isOwner 
+                            ? "You must be a member of this space to vote." 
+                            : "You are not eligible to vote."
+                          }
+                        </p>
                       </div>
                     )
                   ) : (

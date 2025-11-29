@@ -1,0 +1,23 @@
+# Smart Contract Addresses (Sepolia Testnet) --> to change with your own deployed contract addresses if deployed.
+NEXT_PUBLIC_MOCK_ENS_ADDRESS=0xB94ccA29A9eCCb65AC9548DAb2d1ab768F3b494D
+NEXT_PUBLIC_PRIVATE_PROPOSAL_FACTORY_ADDRESS=0x6f27646A29501Ee4aF0e4b6ABC2B28c71F723A1A
+NEXT_PUBLIC_SPACE_REGISTRY_ADDRESS=0xB1480EF7694d9e57b871fdD1a779eb5f278C8308
+NEXT_PUBLIC_MOCK_GOVERNANCE_TOKEN_ADDRESS=0x24b8aE269ad0284762AfcAC32b5c1EF42875fa7D
+
+# Infura Configuration --> to change with your own credentials.
+NEXT_PUBLIC_INFURA_PROJECT_ID=your-infura-project-id
+NEXT_PUBLIC_RPC_URL=https://sepolia.infura.io/v3/your-infura-project-id
+
+# Zama FHE Relayer SDK
+NEXT_PUBLIC_RELAYER_SDK_URL=https://cdn.zama.org/relayer-sdk-js/0.3.0-5/relayer-sdk-js.umd.cjs
+
+# The Graph Subgraph --> to change with your own Subgraph URL if needed. 
+NEXT_PUBLIC_SUBGRAPH_URL=https://api.studio.thegraph.com/query/1715807/agora-sub/1.0.1
+
+
+# Server-side only (sensitive credentials)
+# Get from https://app.pinata.cloud/ 
+PINATA_JWT=your-pinata-jwt-token
+
+# Infura Project Secret (keep secure)
+INFURA_PROJECT_SECRET=your-infura-project-secret

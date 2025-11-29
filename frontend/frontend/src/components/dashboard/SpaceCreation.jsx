@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAccount, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,6 +18,7 @@ const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
 
 export function SpaceCreation() {
   const { address, isConnected } = useAccount();
+  const router = useRouter();
   const [mounted, setMounted] = useState(false);
   const [ensName, setEnsName] = useState('');
   const [displayName, setDisplayName] = useState('');
@@ -146,8 +148,13 @@ export function SpaceCreation() {
       console.log('Space creation successful! Transaction hash:', hash);
       setSuccess(true);
       setErrors({});
+      // Redirect to the newly created space page
+      const spaceName = ensName.replace('.agora', '');
+      setTimeout(() => {
+        router.push(`/app/${spaceName}`);
+      }, 2000); // Small delay to show success message
     }
-  }, [isSuccess, hash, isConfirming]);
+  }, [isSuccess, hash, isConfirming, ensName, router]);
 
   // Reset success state when transaction completes
   if (isSuccess && !success) {

@@ -1,20 +1,6 @@
-# AGORA
+The frontend component of Agora is a Next.js web application that provides the user interface for the Agora platform. It enables users to interact with the decentralized governance system through a modern, responsive web interface.
 
-A privacy-preserving governance platform using Zama's Fully Homomorphic Encryption (FHE) for anonymous voting in decentralized spaces.
-
-## 🌟 Overview
-
-ZamaHub is the ultimate platform to explore and test Zama's cutting-edge Fully Homomorphic Encryption (FHE) technology. Experience computation on encrypted data without decryption - enabling truly private, secure, and decentralized governance applications.
-
-### Key Features
-
-- **🔐 Fully Homomorphic Encryption**: Perform computations on encrypted data without ever decrypting it
-- **🗳️ Privacy-Preserving Voting**: Cast anonymous votes in governance spaces while maintaining verifiability
-- **🏛️ Decentralized Spaces**: Create and manage governance spaces (DAOs) with member controls
-- **📝 Private Proposals**: Submit and vote on proposals with complete privacy
-- **⚙️ Chainlink Automation**: Seamless, trustless automated processes for proposal resolution
-
-## 🚀 Quick Start
+## Quick Start
 
 ### Prerequisites
 
@@ -26,8 +12,8 @@ ZamaHub is the ultimate platform to explore and test Zama's cutting-edge Fully H
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/ElioMargiotta/ZamaHub-repo.git
-   cd ZamaHub-repo/frontend
+   git clone https://github.com/ElioMargiotta/agora_monorepo.git
+   cd agora_monorepo/frontend
    ```
 
 2. **Install dependencies**
@@ -35,25 +21,36 @@ ZamaHub is the ultimate platform to explore and test Zama's cutting-edge Fully H
    npm install
    ```
 
+3. **Set up environment variables**
+   
+   Copy the `local.example` file to `.env.local` and update the values with your own credentials:
+   
+   ```bash
+   cp local.example .env.local
+   ```
+   
+   Edit `.env.local` and fill in the required values. It is mandatory to edit the Infura and Pinata credentials; the other values can be used as provided in the example. Please refer to the documentation of Pinata and Infura to create your own credentials.
 
-3. **Start the development server**
+
+
+4. **Start the development server**
    ```bash
    npm run dev
    ```
 
 Open [http://localhost:3000](http://localhost:3000) to view the application.
 
-## 🏗️ Architecture
+## Architecture
 
 ### Tech Stack
 
 - **Frontend**: Next.js 15, React 19, Tailwind CSS
-- **Blockchain**: Ethereum, Solidity smart contracts
+- **Blockchain**: EVM, Solidity smart contracts
 - **Indexing**: The Graph protocol for subgraph queries
 - **Deployment**: Hardhat development environment
 - **Encryption**: Zama FHE (@zama-fhe/relayer-sdk)
-- **Wallet**: RainbowKit, Wagmi, Coinbase OnchainKit
-- **Automation**: Chainlink oracles
+- **Wallet**: RainbowKit, Wagmi
+- **Automation**: Chainlink
 - **UI Components**: Radix UI, Framer Motion animations
 
 ### Project Structure
@@ -92,9 +89,9 @@ frontend/
 └── package.json                    # Dependencies
 ```
 
-## 🏛️ Private Governance
+## Private Governance
 
-The flagship feature of ZamaHub is **Private Governance** - a privacy-preserving proposal and voting system that demonstrates the power of FHE in decentralized governance.
+The flagship feature of Agora is **Private Governance** - a privacy-preserving proposal and voting system that demonstrates the power of FHE in decentralized governance.
 
 ### How It Works
 
@@ -116,9 +113,10 @@ The governance system utilizes several Solidity smart contracts deployed with Ha
 
 The platform uses The Graph protocol for efficient on-chain data indexing:
 - `agora-sub/`: Subgraph for Agora-related events
-- `subgraph/`: Main subgraph for spaces, proposals, and voting events
 
-## 🔧 Development
+For local development, you can run your own subgraph node instead of using the hosted service. Refer to [The Graph documentation](https://thegraph.com/docs/) for setup instructions.
+
+## Development
 
 ### Available Scripts
 
@@ -127,9 +125,6 @@ The platform uses The Graph protocol for efficient on-chain data indexing:
 - `npm run start` - Start production server
 - `npm run lint` - Run ESLint
 - `npm run test` - Run Vitest tests
-- `npx hardhat compile` - Compile Solidity smart contracts
-- `npx hardhat test` - Run smart contract tests
-- `npx hardhat deploy` - Deploy contracts to network
 
 ### Environment Setup
 
@@ -151,8 +146,7 @@ npm run test -- --watch
 npm run test -- --coverage
 ```
 
-
-## 📚 Documentation
+## Documentation
 
 - [Next.js Documentation](https://nextjs.org/docs)
 - [Zama FHE Documentation](https://docs.zama.ai/)
@@ -162,16 +156,9 @@ npm run test -- --coverage
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the Apache-2.0 License - see the [LICENSE](LICENSE) file for details.
 
 ## 🙏 Acknowledgments
 
-- [Zama](https://zama.ai/) for the FHE technology
-- [Chainlink](https://chainlink.com/) for automation infrastructure
-- [The Graph](https://thegraph.com/) for decentralized indexing
-- [Vercel](https://vercel.com/) for hosting platform
-- [chriswilder](https://github.com/0xchriswilder) for the fhevm.ts file
 
----
-
-Built with ❤️ using Zama's revolutionary FHE technology
+- [Chriswilder](https://github.com/0xchriswilder/fhevm-react-template/blob/main/packages/fhevm-sdk/src/core/fhevm.ts) for providing the initial skeleton of the `fhevm.ts` file

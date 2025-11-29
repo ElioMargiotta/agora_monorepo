@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAccount, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,6 +18,7 @@ const MOCK_ENS_ADDRESS = process.env.NEXT_PUBLIC_MOCK_ENS_ADDRESS || '0x00000000
 
 export default function ENSRegistrationPage() {
   const { address, isConnected } = useAccount();
+  const router = useRouter();
   const [mounted, setMounted] = useState(false);
   const [ensName, setEnsName] = useState('');
   const [errors, setErrors] = useState({});
@@ -130,8 +132,12 @@ export default function ENSRegistrationPage() {
       setSuccess(true);
       setErrors({});
       setIsAvailable(false); // Mark as taken now
+      // Redirect to create space page after successful registration
+      setTimeout(() => {
+        router.push('/app/spaces/create');
+      }, 2000); // Small delay to show success message
     }
-  }, [isSuccess, hash]);
+  }, [isSuccess, hash, router]);
 
   // Reset success state when transaction completes
   if (isSuccess && !success) {
