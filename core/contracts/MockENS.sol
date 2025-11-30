@@ -73,6 +73,7 @@ contract MockENS is IENS {
     /// @param node The node
     /// @param newOwner The new owner
     function setNodeOwner(bytes32 node, address newOwner) external {
+        if (owners[node] != address(0)) revert NotAuthorized();
         owners[node] = newOwner;
     }
 

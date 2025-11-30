@@ -76,11 +76,11 @@ For detailed architecture, FHE usage, and resolution process, see [Contract Arch
   #### Deployed Contracts on Sepolia
   These are the addresses of the contracts deployed on the Sepolia testnet using the `deploy/deploy.ts` script. The script deploys and verifies each contract on Etherscan.
 
-  - **MockENS**: 0xB94ccA29A9eCCb65AC9548DAb2d1ab768F3b494D
-  - **SpaceRegistry**: 0xB1480EF7694d9e57b871fdD1a779eb5f278C8308
-  - **ProposalAutomation**: 0xA3ea6b9255b606Eda856eb699DD62efc72D39167
-  - **PrivateProposalFactory**: 0x6f27646A29501Ee4aF0e4b6ABC2B28c71F723A1A
-  - **MockGovernanceToken**: 0x24b8aE269ad0284762AfcAC32b5c1EF42875fa7D
+  - **MockENS**: 0x4a8BbdC602E18759E1961a886F6e3D7aA2a75Bb4
+  - **SpaceRegistry**: 0x96eEFbc1452F9324a7422399c5149b8a7f011fb1
+  - **ProposalAutomation**: 0xb452ec65f678139922F537Ff01Fd6036dEF7Be70
+  - **PrivateProposalFactory**: 0x2E04e1BaC41D3c56b7174aC83f17753d3cEB56F4
+  - **MockGovernanceToken**: 0xd989E1C299835a01C8687d64ec8A5cc6aD69bde7
 
 ## 📜 Available Scripts
 
