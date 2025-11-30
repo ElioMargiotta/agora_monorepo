@@ -63,7 +63,7 @@ export function CallToAction() {
         </motion.h2>
         
         <motion.p 
-          className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed px-4 sm:px-0 mt-8"
+          className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed px-4 sm:px-0 mt-8 text-justify"
           initial={{ opacity: 0, y: 20 }}
           animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
           transition={{ duration: 0.8, delay: 0.4 }}
@@ -72,7 +72,7 @@ export function CallToAction() {
         </motion.p>
 
         <motion.p 
-          className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed px-4 sm:px-0 mt-8"
+          className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed px-4 sm:px-0 mt-8 text-justify"
           initial={{ opacity: 0, y: 20 }}
           animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
           transition={{ duration: 0.8, delay: 0.5 }}
@@ -82,28 +82,51 @@ export function CallToAction() {
 
         {/* Call to action */}
         <motion.div
-          className="text-center mt-20"
+          className="text-center mt-20 space-y-6"
           initial={{ opacity: 0, y: 30 }}
           animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
           transition={{ duration: 0.6, delay: 1.5 }}
         >
-          <motion.a
-            href="/app"
-            className="inline-flex items-center gap-3 px-8 py-4 rounded-full bg-[#4D89B0] text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer"
-            whileHover={{ 
-              scale: 1.05,
-              boxShadow: "0 20px 40px rgba(77, 137, 176, 0.3)"
-            }}
-            whileTap={{ scale: 0.95 }}
-          >
-            <span>Start Your Journey</span>
-            <motion.div
-              animate={{ x: [0, 5, 0] }}
-              transition={{ duration: 1.5, repeat: Infinity }}
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+            <motion.a
+              href="/app"
+              className="inline-flex items-center gap-3 px-8 py-4 rounded-full bg-[#4D89B0] text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer"
+              whileHover={{ 
+                scale: 1.05,
+                boxShadow: "0 20px 40px rgba(77, 137, 176, 0.3)"
+              }}
+              whileTap={{ scale: 0.95 }}
             >
-              →
-            </motion.div>
-          </motion.a>
+              <span>Start Your Journey</span>
+              <motion.div
+                animate={{ x: [0, 5, 0] }}
+                transition={{ duration: 1.5, repeat: Infinity }}
+              >
+                →
+              </motion.div>
+            </motion.a>
+
+            <motion.a
+              href="/app/docs"
+              className="inline-flex items-center gap-3 px-8 py-4 rounded-full border-2 border-[#4D89B0] text-[#4D89B0] bg-transparent hover:bg-[#4D89B0] hover:text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer"
+              whileHover={{ 
+                scale: 1.05,
+                boxShadow: "0 20px 40px rgba(77, 137, 176, 0.3)"
+              }}
+              whileTap={{ scale: 0.95 }}
+              initial={{ opacity: 0 }}
+              animate={isInView ? { opacity: 1 } : { opacity: 0 }}
+              transition={{ duration: 0.6, delay: 1.7 }}
+            >
+              <span>View Documentation</span>
+              <motion.div
+                animate={{ x: [0, 3, 0] }}
+                transition={{ duration: 2, repeat: Infinity }}
+              >
+                
+              </motion.div>
+            </motion.a>
+          </div>
         </motion.div>
       </motion.div>
     </section>

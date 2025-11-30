@@ -59,7 +59,7 @@ function FeatureItem({ feature, index }) {
           </motion.h3>
           
           <motion.p 
-            className="text-sm sm:text-base text-muted-foreground group-hover:text-foreground/80 transition-colors duration-300 leading-relaxed"
+            className="text-sm sm:text-base text-muted-foreground group-hover:text-foreground/80 transition-colors duration-300 leading-relaxed text-justify"
             initial={{ opacity: 0 }}
             animate={isInView ? { opacity: 1 } : { opacity: 0 }}
             transition={{ delay: 0.4 + (index * 0.1) }}
@@ -148,7 +148,7 @@ export function Features() {
           <motion.h2 
             className="section-title text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-[#4D89B0]"
           >
-            {"My Vision".split('').map((char, i) => (
+            {"Our Vision".split('').map((char, i) => (
               <motion.span
                 key={i}
                 className="inline-block"
@@ -162,7 +162,7 @@ export function Features() {
           </motion.h2>
           
           <motion.p 
-            className="section-description max-w-3xl mx-auto text-base sm:text-lg md:text-xl leading-relaxed"
+            className="section-description max-w-3xl mx-auto text-base sm:text-lg md:text-xl leading-relaxed text-justify"
             initial={{ opacity: 0, y: 20 }}
             animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
             transition={{ duration: 0.6, delay: 0.8 }}
@@ -180,9 +180,7 @@ export function Features() {
         >
           <h3 className="text-2xl sm:text-3xl font-semibold text-[#4D89B0] mb-4">
             The Problems Agora Solves
-          </h3>
-          <p className="text-muted-foreground max-w-2xl mx-auto">
-            Here's how Agora addresses the key challenges in decentralized governance:
+          </h3>          <p className="text-muted-foreground max-w-2xl mx-auto text-justify">
           </p>
         </motion.div>
         

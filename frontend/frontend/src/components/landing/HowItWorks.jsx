@@ -125,7 +125,7 @@ function StepCard({ step, index, totalSteps }) {
           
           <CardContent className="relative z-10 text-center">
             <motion.p 
-              className={`text-sm leading-relaxed transition-colors duration-300 ${
+              className={`text-sm leading-relaxed transition-colors duration-300 text-justify ${
                 isActive ? 'text-white/80' : 'text-muted-foreground group-hover:text-foreground/80'
               }`}
               initial={{ opacity: 0 }}
@@ -234,7 +234,7 @@ export function HowItWorks() {
           </motion.h2>
           
           <motion.p 
-            className="section-description max-w-3xl mx-auto text-lg sm:text-xl leading-relaxed"
+            className="section-description max-w-3xl mx-auto text-lg sm:text-xl leading-relaxed text-justify"
             initial={{ opacity: 0, y: 20 }}
             animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
             transition={{ duration: 0.6, delay: 0.6 }}
