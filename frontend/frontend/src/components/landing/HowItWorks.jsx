@@ -239,8 +239,7 @@ export function HowItWorks() {
             animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
             transition={{ duration: 0.6, delay: 0.6 }}
           >
-            Discover how Zama's Fully Homomorphic Encryption enables privacy-preserving blockchain applications. 
-            Follow our four-step process to participate in the Zama Game, where your votes remain encrypted until automated result revelation.
+            Experience the power of privacy-preserving governance with Agora. Follow these four steps to create secure, decentralized spaces where your community's votes remain encrypted.
           </motion.p>
         </motion.div>
         
