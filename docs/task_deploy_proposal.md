@@ -15,32 +15,32 @@ The deployment uses the Hardhat task `proposal` which automates the entire workf
 ## Deployment Steps
 
 ### 1. ENS Registration
-- **Domain**: `test3.agora`
+- **Domain**: `test4.agora`
 - **Status**: ✅ Successfully registered
 
 ### 2. Space Creation
-- **ENS Domain**: `test3.agora`
+- **ENS Domain**: `test4.agora`
 - **Status**: ✅ Space created successfully
-- **Space ID**: `0xe52802385cb06b34e9f37161561886665dd7418c8ea229ac9f3ca2d7b7466b0d`
+- **Space ID**: `0x6eb01d03c46903ea10d90476ad8a23e7ef28c4e7ed8e20e08bafa0cc1db4c7a7`
 
 ### 3. Proposal Creation
-- **Space**: `test3.agora` (ID: `0xe52802385cb06b34e9f37161561886665dd7418c8ea229ac9f3ca2d7b7466b0d`)
+- **Space**: `test4.agora` (ID: `0x6eb01d03c46903ea10d90476ad8a23e7ef28c4e7ed8e20e08bafa0cc1db4c7a7`)
 - **Status**: ✅ Proposal created successfully
-- **Proposal Address**: `0x9bAe23C3e1fe248F0B99e4dE31F264eB73A92399`
-- **Proposal ID**: `0x2d43c803669cb9c8b3108880af4f13df86fea8c62965d3e65f65a9d8ed7c9e2d`
+- **Proposal Address**: `0x701F379AC18E5c10487A832dF5E00E4DA4e84506`
+- **Proposal ID**: `0x186207e53411b6a185b8d9fe795ab17e91e40a42ea658faeaa95a9711016d140`
 
 ### 4. Contract Verification
 - **Contract**: `contracts/PrivateProposal.sol:PrivateProposal`
-- **Address**: `0x9bAe23C3e1fe248F0B99e4dE31F264eB73A92399`
-- **Status**: ✅ Successfully verified on Etherscan
-- **Etherscan Link**: [View Contract](https://sepolia.etherscan.io/address/0x9bAe23C3e1fe248F0B99e4dE31F264eB73A92399#code)
+- **Address**: `0x701F379AC18E5c10487A832dF5E00E4DA4e84506`
+- **Status**: ✅ Successfully verified on Etherscan (already verified)
+- **Etherscan Link**: [View Contract](https://sepolia.etherscan.io/address/0x701F379AC18E5c10487A832dF5E00E4DA4e84506#code)
 - **Wait Time**: 30 seconds for bytecode propagation
 
 ## Final Results
 
 **Deployment Complete!**
 
-- **ENS Domain**: `test3.agora`
-- **Space ID**: `0xe52802385cb06b34e9f37161561886665dd7418c8ea229ac9f3ca2d7b7466b0d`
-- **Proposal Address**: `0x9bAe23C3e1fe248F0B99e4dE31F264eB73A92399`
-- **Proposal ID**: `0x2d43c803669cb9c8b3108880af4f13df86fea8c62965d3e65f65a9d8ed7c9e2d`
+- **ENS Domain**: `test4.agora`
+- **Space ID**: `0x6eb01d03c46903ea10d90476ad8a23e7ef28c4e7ed8e20e08bafa0cc1db4c7a7`
+- **Proposal Address**: `0x701F379AC18E5c10487A832dF5E00E4DA4e84506`
+- **Proposal ID**: `0x186207e53411b6a185b8d9fe795ab17e91e40a42ea658faeaa95a9711016d140`
