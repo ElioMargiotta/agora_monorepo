@@ -372,135 +372,34 @@ export async function updateSpaceDescription(spaceId, updates) {
 
 Add to `.env.local`:
 ```bash
-MONGODB_URI="your creditential"
+MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/agora?retryWrites=true&w=majority
 ```
 
-**MongoDB Setup Options**:
-
-1. **MongoDB Atlas** (Recommended for production):
-   - Create free account at https://mongodb.com/atlas
-   - Create a new cluster
-   - Get connection string from "Connect" → "Connect your application"
-   - Replace `<username>` and `<password>` with your credentials
-   - Whitelist your IP address or use 0.0.0.0/0 for development
-
-2. **Local MongoDB** (For development):
-   - Install MongoDB: https://www.mongodb.com/try/download/community
-   - Start MongoDB service: `mongod`
-   - Use connection string: `mongodb://localhost:27017/agora`
+**Important for Vercel/Production Deployment**:
+- Add `MONGODB_URI` to your deployment platform's environment variables
+- In MongoDB Atlas, whitelist `0.0.0.0/0` (allow all IPs) under Network Access for serverless deployments
 
 ## Security Considerations
 
-### Access Control
-
-**Current Implementation**:
-- UI-level restrictions verify space owner/admin status
-- Updates only allowed through authenticated requests
-
-**Best Practices**:
-- Always verify user owns/administers the space before updates
-- Validate all input data (description length, logo format)
-- Sanitize user-provided content to prevent injection attacks
-
-### Data Privacy
-
 - Space descriptions and logos are **public** by default
-- Do not store sensitive or personal information in descriptions
-- Logos should not contain personally identifiable information (PII)
-
-### Backup Strategy
-
-**MongoDB Atlas** (Recommended):
-- Automated daily backups included
-- Point-in-time recovery available
-- Replica sets for high availability
-- Off-site backup storage
-
-**Local MongoDB**:
-- Configure regular backup schedule using `mongodump`
-- Store backups in secure off-site location
-- Test backup restoration periodically
+- UI-level access control restricts updates to space owners/admins
+- MongoDB Atlas includes automated backups and point-in-time recovery
+- For production: whitelist `0.0.0.0/0` in MongoDB Atlas Network Access to support serverless deployments
 
 ## Performance Optimization
 
-### Caching Strategy
-
-**Client-Side**:
-- React Query caching with 5-minute default TTL
-- Automatic cache invalidation on updates
-- Background refetching on focus
-
-**Database**:
-- Indexed queries on `spaceId` field for fast lookups
-- Connection pooling to reduce connection overhead
-- `.lean()` queries return plain JavaScript objects (faster than Mongoose documents)
-
-### Image Handling
-
-**Current Implementation**:
-- Base64 encoding for logos
-- Client-side validation (2MB max file size)
-- Supports PNG, JPG, SVG, WebP formats
-- Automatic color filtering applied in UI (#4D89B0)
-
-**Optimization Tips**:
-- Compress images before upload
-- Use appropriate image formats (WebP for photos, SVG for icons)
-- Consider smaller dimensions (logos displayed at 80x80px)
-
-## Monitoring
-
-### MongoDB Atlas Dashboard
-
-MongoDB Atlas provides built-in monitoring:
-- Real-time performance metrics
-- Query performance analysis
-- Storage size tracking
-- Connection pool statistics
-- Automated alerts for issues
-
-### Application Monitoring
-
-Consider implementing:
-- Error tracking (Sentry, LogRocket)
-- API response time monitoring
-- Database query performance logs
-- Failed upload attempt tracking
+- **Caching**: React Query with 5-minute TTL for client-side caching
+- **Database**: Indexed queries on `spaceId`, connection pooling, `.lean()` queries for performance
+- **Images**: Base64 encoding, 2MB max, supports PNG/JPG/SVG/WebP, displayed at 80x80px
 
 ## Troubleshooting
 
-### Common Issues
+**"Space description not found"**: Verify space exists on blockchain and spaceId matches ENS name
 
-**"Space description not found"**
-- Verify the space was created successfully on the blockchain
-- Check that the spaceId matches the ENS name
-- Ensure MongoDB connection is active (check `.env.local`)
+**"Logo not displaying"**: Check file size <2MB and format is PNG/JPG/SVG/WebP
 
-**"Logo not displaying"**
-- Verify file size is under 2MB
-- Check that the image format is supported (PNG, JPG, SVG, WebP)
-- Ensure base64 encoding is valid
-- Check browser console for errors
+**"Cannot update description"**: Verify connected wallet is space owner/admin
 
-**"Cannot update description"**
-- Verify the connected wallet is the space owner or admin
-- Ensure wallet is properly connected
-- Check that the space exists in the database
-- Review API response for specific error messages
-
-**MongoDB connection errors**
-- Verify `MONGODB_URI` is set correctly in `.env.local`
-- Check IP whitelist settings in MongoDB Atlas
-- Ensure database credentials are correct
-- Test connection string using `mongosh`
-
-### Debug Mode
-
-Enable detailed logging by checking the browser console and Next.js terminal output for error messages and API responses.
-
-### Getting Help
-
-For issues or questions:
-- Check the [Frontend Documentation](frontend.md)
-- Review [GitHub Issues](https://github.com/ElioMargiotta/agora_monorepo/issues)
-- Consult the [MongoDB Documentation](https://docs.mongodb.com/)
+**MongoDB connection errors**: 
+- Check `MONGODB_URI` in environment variables
+- Verify IP whitelist in MongoDB Atlas (use `0.0.0.0/0` for Vercel)
