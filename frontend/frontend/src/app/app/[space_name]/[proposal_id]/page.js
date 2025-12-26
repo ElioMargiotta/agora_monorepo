@@ -4,6 +4,10 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams } from 'next/navigation';
 import { useAccount, useWalletClient, useReadContract, useContractReads } from 'wagmi';
 import { ethers } from 'ethers';
+import Image from 'next/image';
+import ReactMarkdown from 'react-markdown';
+import rehypeRaw from 'rehype-raw';
+import remarkGfm from 'remark-gfm';
 import { initializeFheInstance, createEncryptedInput, decryptMultipleHandles, createEncryptedPercentages } from '@/lib/fhevm';
 import { useProposalById, useAdminSpaceIds, useMemberSpaceIds, useSpaceByEns } from '@/hooks/useSubgraph';
 import { Button } from '@/components/ui/button';
@@ -31,6 +35,79 @@ const formatTime = (seconds) => {
     return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
   }
 };
+
+// Reusable markdown component with consistent styling
+const MarkdownContent = ({ content }) => (
+  <div className="prose prose-sm max-w-none">
+    <ReactMarkdown
+      rehypePlugins={[rehypeRaw]}
+      remarkPlugins={[remarkGfm]}
+      components={{
+        h1: ({node, ...props}) => <h1 className="text-3xl font-bold mb-4 mt-6" {...props} />,
+        h2: ({node, ...props}) => <h2 className="text-2xl font-bold mb-3 mt-5" {...props} />,
+        h3: ({node, ...props}) => <h3 className="text-xl font-semibold mb-2 mt-4" {...props} />,
+        h4: ({node, ...props}) => <h4 className="text-lg font-semibold mb-2 mt-3" {...props} />,
+        p: ({node, ...props}) => <p className="mb-3 leading-relaxed" {...props} />,
+        a: ({node, ...props}) => <a className="text-[#4D89B0] underline hover:text-[#4D89B0]/80" target="_blank" rel="noopener noreferrer" {...props} />,
+        ul: ({node, ...props}) => <ul className="list-disc list-inside mb-3 space-y-1" {...props} />,
+        ol: ({node, ...props}) => <ol className="list-decimal list-inside mb-3 space-y-1" {...props} />,
+        li: ({node, ...props}) => <li className="ml-4" {...props} />,
+        blockquote: ({node, ...props}) => <blockquote className="border-l-4 border-[#4D89B0] pl-4 italic my-4" {...props} />,
+        code: ({node, inline, ...props}) => 
+          inline 
+            ? <code className="bg-gray-100 px-1 py-0.5 rounded text-sm font-mono" {...props} />
+            : <code className="block bg-gray-100 p-3 rounded text-sm font-mono overflow-x-auto my-3" {...props} />,
+        img: ({node, src, alt, ...props}) => {
+          // Don't render if no src
+          if (!src) return null;
+          
+          // Convert IPFS URLs to gateway URLs
+          let imageUrl = src;
+          if (src.startsWith('ipfs://')) {
+            imageUrl = `https://sapphire-impressive-salamander-839.mypinata.cloud/ipfs/${src.replace('ipfs://', '')}`;
+          } else if (src.startsWith('data:')) {
+            // Use regular img tag for data URLs (legacy support)
+            return (
+              <span className="inline-block my-2 max-w-md">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img 
+                  src={src} 
+                  alt={alt || 'Uploaded image'} 
+                  className="max-w-full h-auto rounded shadow-sm border border-gray-200" 
+                  onError={(e) => {
+                    console.error('Image load error:', src?.substring(0, 50));
+                    e.target.style.display = 'none';
+                  }}
+                />
+              </span>
+            );
+          }
+          
+          return (
+            <span className="inline-block my-2 max-w-md">
+              <Image 
+                src={imageUrl} 
+                alt={alt || 'Image'} 
+                width={400} 
+                height={300} 
+                className="rounded w-full h-auto shadow-sm border border-gray-200" 
+                unoptimized 
+                onError={(e) => {
+                  console.error('Image load error:', imageUrl);
+                }}
+              />
+            </span>
+          );
+        },
+        table: ({node, ...props}) => <table className="border-collapse border border-gray-300 my-4" {...props} />,
+        th: ({node, ...props}) => <th className="border border-gray-300 px-4 py-2 bg-gray-100" {...props} />,
+        td: ({node, ...props}) => <td className="border border-gray-300 px-4 py-2" {...props} />,
+      }}
+    >
+      {content}
+    </ReactMarkdown>
+  </div>
+);
 
 export default function ProposalVotePage() {
   const params = useParams();
@@ -72,7 +149,18 @@ export default function ProposalVotePage() {
       const response = await fetch(gatewayUrl);
       if (response.ok) {
         const text = await response.text();
-        setDescriptionText(text);
+        // Try to parse as JSON to extract description field
+        try {
+          const json = JSON.parse(text);
+          if (json.description) {
+            setDescriptionText(json.description);
+          } else {
+            setDescriptionText(text);
+          }
+        } catch (parseError) {
+          // If not JSON, use the text as is
+          setDescriptionText(text);
+        }
       } else {
         throw new Error(`Gateway response not ok: ${response.status}`);
       }
@@ -525,7 +613,9 @@ export default function ProposalVotePage() {
                       <p className="text-black">Loading description...</p>
                     ) : descriptionText ? (
                       <div>
-                        <p className="text-black whitespace-pre-wrap">{descriptionText}</p>
+                        <div className="text-black">
+                          <MarkdownContent content={descriptionText} />
+                        </div>
                         <a href={`https://sapphire-impressive-salamander-839.mypinata.cloud/ipfs/${proposal.p_bodyURI.replace('ipfs://', '')}`} target="_blank" rel="noopener noreferrer" className="text-[#4D89B0] underline text-sm cursor-pointer">
                           View on IPFS
                         </a>
@@ -586,7 +676,9 @@ export default function ProposalVotePage() {
                         <p className="text-black">Loading description...</p>
                       ) : descriptionText ? (
                         <div>
-                          <p className="text-black whitespace-pre-wrap">{descriptionText}</p>
+                          <div className="text-black">
+                            <MarkdownContent content={descriptionText} />
+                          </div>
                           <a href={`https://sapphire-impressive-salamander-839.mypinata.cloud/ipfs/${proposal.p_bodyURI.replace('ipfs://', '')}`} target="_blank" rel="noopener noreferrer" className="text-[#4D89B0] underline text-sm cursor-pointer">
                             View on IPFS
                           </a>
@@ -733,7 +825,9 @@ export default function ProposalVotePage() {
                         <p className="text-black">Loading description...</p>
                       ) : descriptionText ? (
                         <div>
-                          <p className="text-black whitespace-pre-wrap">{descriptionText}</p>
+                          <div className="text-black">
+                            <MarkdownContent content={descriptionText} />
+                          </div>
                           <a href={`https://sapphire-impressive-salamander-839.mypinata.cloud/ipfs/${proposal.p_bodyURI.replace('ipfs://', '')}`} target="_blank" rel="noopener noreferrer" className="text-[#4D89B0] underline text-sm cursor-pointer">
                             View on IPFS
                           </a>
