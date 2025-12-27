@@ -1,7 +1,7 @@
 import { task } from "hardhat/config";
 import { ethers } from "ethers";
 
-task("proposal", "Deploy a proposal on Sepolia test4net", async (_taskArgs, hre) => {
+task("proposal", "Deploy a proposal on Sepolia testxnet", async (_taskArgs, hre) => {
   const { deployer } = await hre.getNamedAccounts();
   const { ethers: hreEthers } = hre;
   const { fhevm } = hre;
@@ -13,31 +13,31 @@ task("proposal", "Deploy a proposal on Sepolia test4net", async (_taskArgs, hre)
   // Hardcoded contract addresses
   const mockENSAddress = "0x4a8BbdC602E18759E1961a886F6e3D7aA2a75Bb4";
   const spaceRegistryAddress = "0x96eEFbc1452F9324a7422399c5149b8a7f011fb1";
-  const privateProposalFactoryAddress = "0x2E04e1BaC41D3c56b7174aC83f17753d3cEB56F4";
+  const privateProposalFactoryAddress = "0x2AA5bd99fBa98c765060D7A4A2E4896860B72c37";
 
   const mockENS = await hreEthers.getContractAt("MockENS", mockENSAddress);
   const spaceRegistry = await hreEthers.getContractAt("SpaceRegistry", spaceRegistryAddress);
   const privateProposalFactory = await hreEthers.getContractAt("PrivateProposalFactory", privateProposalFactoryAddress);
 
   // ============================================
-  // 1. Register ENS: test4.agora
+  // 1. Register ENS: testx.agora
   // ============================================
-  console.log("Registering ENS: test4.agora");
+  console.log("Registering ENS: testx.agora");
 
-  // Set deployer as owner of test4.agora node
-  const test4AgoraNode = ethers.namehash("test4.agora");
-  const ensTx = await mockENS.setNodeOwner(test4AgoraNode, deployer);
+  // Set deployer as owner of testx.agora node
+  const testxAgoraNode = ethers.namehash("testx.agora");
+  const ensTx = await mockENS.setNodeOwner(testxAgoraNode, deployer);
   await ensTx.wait();
-  console.log("✅ Registered 'test4.agora' domain");
+  console.log("✅ Registered 'testx.agora' domain");
 
   // ============================================
   // 2. Register a space
   // ============================================
-  console.log("Creating space for test4.agora");
+  console.log("Creating space for testx.agora");
 
   const spaceTx = await spaceRegistry.createSpace(
-    "test4.agora", // ensName
-    "test4 Agora Space", // displayName
+    "testx.agora", // ensName
+    "testx Agora Space", // displayName
     0, // MembershipType.Public
     ethers.ZeroAddress, // criteriaContract
     0 // criteriaAmount
@@ -46,7 +46,7 @@ task("proposal", "Deploy a proposal on Sepolia test4net", async (_taskArgs, hre)
   console.log("✅ Space created");
 
   // Get spaceId
-  const spaceId = ethers.keccak256(ethers.toUtf8Bytes("test4.agora"));
+  const spaceId = ethers.keccak256(ethers.toUtf8Bytes("testx.agora"));
   console.log("Space ID:", spaceId);
 
   // ============================================
@@ -68,7 +68,9 @@ task("proposal", "Deploy a proposal on Sepolia test4net", async (_taskArgs, hre)
     pType: 0, // NonWeightedSingleChoice
     eligibilityType: 0, // Public
     includeAbstain: true,
-    title: "test4 Proposal",
+    predictionMarketEnabled: false, // Set to true to enable prediction market
+    predictionToken: ethers.ZeroAddress, // Set to MockUSDC address if prediction market enabled
+    title: "testx Proposal",
     bodyURI: "https://example.com/proposal",
     choices: ["Yes", "No"]
   };
@@ -102,7 +104,7 @@ task("proposal", "Deploy a proposal on Sepolia test4net", async (_taskArgs, hre)
   }
 
   console.log("\n🎉 Proposal deployment complete!");
-  console.log(`ENS: test4.agora`);
+  console.log(`ENS: testx.agora`);
   console.log(`Space ID: ${spaceId}`);
   console.log(`Proposal Address: ${proposalAddress}`);
   console.log(`Proposal ID: ${proposalId}`);

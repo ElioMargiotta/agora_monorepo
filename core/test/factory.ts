@@ -28,7 +28,9 @@ describe("PrivateProposalFactory", function () {
     ELIGIBILITY_TOKEN: ethers.ZeroAddress,
     ELIGIBILITY_THRESHOLD: 0,
     INCLUDE_ABSTAIN: false,
-    PASSING_THRESHOLD: 0
+    PASSING_THRESHOLD: 0,
+    PREDICTION_MARKET_ENABLED: false,
+    PREDICTION_TOKEN: ethers.ZeroAddress
   };
 
   beforeEach(async function () {
@@ -98,6 +100,8 @@ describe("PrivateProposalFactory", function () {
         eligibilityThreshold: PROPOSAL_CONFIG.ELIGIBILITY_THRESHOLD,
         includeAbstain: PROPOSAL_CONFIG.INCLUDE_ABSTAIN,
         passingThreshold: PROPOSAL_CONFIG.PASSING_THRESHOLD,
+        predictionMarketEnabled: PROPOSAL_CONFIG.PREDICTION_MARKET_ENABLED,
+        predictionToken: PROPOSAL_CONFIG.PREDICTION_TOKEN,
       };
 
       const tx = await factory.createProposal(params);
@@ -147,6 +151,8 @@ describe("PrivateProposalFactory", function () {
         eligibilityThreshold: PROPOSAL_CONFIG.ELIGIBILITY_THRESHOLD,
         includeAbstain: PROPOSAL_CONFIG.INCLUDE_ABSTAIN,
         passingThreshold: PROPOSAL_CONFIG.PASSING_THRESHOLD,
+        predictionMarketEnabled: PROPOSAL_CONFIG.PREDICTION_MARKET_ENABLED,
+        predictionToken: PROPOSAL_CONFIG.PREDICTION_TOKEN,
       };
 
       // Create first proposal
@@ -226,6 +232,8 @@ describe("PrivateProposalFactory", function () {
         eligibilityThreshold: PROPOSAL_CONFIG.ELIGIBILITY_THRESHOLD,
         includeAbstain: PROPOSAL_CONFIG.INCLUDE_ABSTAIN,
         passingThreshold: PROPOSAL_CONFIG.PASSING_THRESHOLD,
+        predictionMarketEnabled: PROPOSAL_CONFIG.PREDICTION_MARKET_ENABLED,
+        predictionToken: PROPOSAL_CONFIG.PREDICTION_TOKEN,
       };
 
       await expect(
@@ -248,6 +256,8 @@ describe("PrivateProposalFactory", function () {
         eligibilityThreshold: PROPOSAL_CONFIG.ELIGIBILITY_THRESHOLD,
         includeAbstain: PROPOSAL_CONFIG.INCLUDE_ABSTAIN,
         passingThreshold: PROPOSAL_CONFIG.PASSING_THRESHOLD,
+        predictionMarketEnabled: PROPOSAL_CONFIG.PREDICTION_MARKET_ENABLED,
+        predictionToken: PROPOSAL_CONFIG.PREDICTION_TOKEN,
       };
       await expect(
         factory.createProposal(params)
@@ -272,6 +282,8 @@ describe("PrivateProposalFactory", function () {
         eligibilityThreshold: PROPOSAL_CONFIG.ELIGIBILITY_THRESHOLD,
         includeAbstain: PROPOSAL_CONFIG.INCLUDE_ABSTAIN,
         passingThreshold: PROPOSAL_CONFIG.PASSING_THRESHOLD,
+        predictionMarketEnabled: PROPOSAL_CONFIG.PREDICTION_MARKET_ENABLED,
+        predictionToken: PROPOSAL_CONFIG.PREDICTION_TOKEN,
       };
 
       await factory.createProposal({
@@ -321,6 +333,8 @@ describe("PrivateProposalFactory", function () {
         eligibilityThreshold: PROPOSAL_CONFIG.ELIGIBILITY_THRESHOLD,
         includeAbstain: PROPOSAL_CONFIG.INCLUDE_ABSTAIN,
         passingThreshold: PROPOSAL_CONFIG.PASSING_THRESHOLD,
+        predictionMarketEnabled: PROPOSAL_CONFIG.PREDICTION_MARKET_ENABLED,
+        predictionToken: PROPOSAL_CONFIG.PREDICTION_TOKEN,
       };
 
       const tx = await factory.createProposal(params);
@@ -370,6 +384,8 @@ describe("PrivateProposalFactory", function () {
         eligibilityThreshold: PROPOSAL_CONFIG.ELIGIBILITY_THRESHOLD,
         includeAbstain: PROPOSAL_CONFIG.INCLUDE_ABSTAIN,
         passingThreshold: PROPOSAL_CONFIG.PASSING_THRESHOLD,
+        predictionMarketEnabled: PROPOSAL_CONFIG.PREDICTION_MARKET_ENABLED,
+        predictionToken: PROPOSAL_CONFIG.PREDICTION_TOKEN,
       };
 
       await expect(
@@ -391,6 +407,8 @@ describe("PrivateProposalFactory", function () {
         eligibilityThreshold: BigInt(2**256) - BigInt(1), // Max uint256
         includeAbstain: true,
         passingThreshold: 10000, // Max 100%
+        predictionMarketEnabled: false,
+        predictionToken: PROPOSAL_CONFIG.PREDICTION_TOKEN,
       };
 
       await expect(factory.createProposal(params)).to.not.be.reverted;
@@ -412,6 +430,8 @@ describe("PrivateProposalFactory", function () {
         eligibilityThreshold: PROPOSAL_CONFIG.ELIGIBILITY_THRESHOLD,
         includeAbstain: PROPOSAL_CONFIG.INCLUDE_ABSTAIN,
         passingThreshold: PROPOSAL_CONFIG.PASSING_THRESHOLD,
+        predictionMarketEnabled: PROPOSAL_CONFIG.PREDICTION_MARKET_ENABLED,
+        predictionToken: PROPOSAL_CONFIG.PREDICTION_TOKEN,
       };
 
       // Create multiple proposals
@@ -450,6 +470,9 @@ describe("PrivateProposalFactory", function () {
         eligibilityThreshold: PROPOSAL_CONFIG.ELIGIBILITY_THRESHOLD,
         includeAbstain: PROPOSAL_CONFIG.INCLUDE_ABSTAIN,
         passingThreshold: PROPOSAL_CONFIG.PASSING_THRESHOLD,
+        predictionMarketEnabled: PROPOSAL_CONFIG.PREDICTION_MARKET_ENABLED,
+        predictionToken: PROPOSAL_CONFIG.PREDICTION_TOKEN,
+
       };
 
       await factory.createProposal(createParams);
@@ -532,6 +555,8 @@ describe("PrivateProposalFactory", function () {
         eligibilityThreshold: PROPOSAL_CONFIG.ELIGIBILITY_THRESHOLD,
         includeAbstain: PROPOSAL_CONFIG.INCLUDE_ABSTAIN,
         passingThreshold: PROPOSAL_CONFIG.PASSING_THRESHOLD,
+        predictionMarketEnabled: PROPOSAL_CONFIG.PREDICTION_MARKET_ENABLED,
+        predictionToken: PROPOSAL_CONFIG.PREDICTION_TOKEN,
       };
 
       await factory.createProposal(createParams2);

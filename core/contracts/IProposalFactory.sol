@@ -16,6 +16,8 @@ struct CreateProposalParams {
     ProposalType pType;
     EligibilityType eligibilityType;
     bool includeAbstain;
+    bool predictionMarketEnabled;
+    address predictionToken; // Token used for prediction market (e.g., USDC)
     string title;
     string bodyURI;
     string[] choices;

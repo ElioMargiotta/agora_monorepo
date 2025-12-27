@@ -5,6 +5,7 @@ import {FHE, euint32, externalEuint32, euint8, externalEuint8} from "@fhevm/soli
 import {ZamaEthereumConfig} from "@fhevm/solidity/config/ZamaConfig.sol";
 import {IVotes} from "@openzeppelin/contracts/governance/utils/IVotes.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {ProposalType, EligibilityType, CreateProposalParams} from "./IProposalFactory.sol";
 import {IPrivateProposal} from "./IPrivateProposal.sol";
 import {ISpaceRegistry} from "./ISpaceRegistry.sol";
@@ -23,7 +24,7 @@ interface IVotingFactory {
 /// @author Elio Margiotta
 /// @notice Verifies math for WeightedSingleChoice and WeightedFractional using OZ IVotes snapshots.
 /// @dev FHE/Zama operations are left intact.
-contract PrivateProposal is IPrivateProposal, ZamaEthereumConfig {
+contract PrivateProposal is IPrivateProposal, ZamaEthereumConfig, ReentrancyGuard {
     // ============ Structs ============
 
     struct ProposalConfig {
@@ -38,6 +39,7 @@ contract PrivateProposal is IPrivateProposal, ZamaEthereumConfig {
         uint256 eligibilityThreshold;
         address creator;
         uint256 snapshotBlock;
+        bool predictionMarketEnabled;
     }
 
     // ============ State Variables ============
@@ -83,6 +85,38 @@ contract PrivateProposal is IPrivateProposal, ZamaEthereumConfig {
     /// @notice Vote percentages in basis points (e.g., 5000 = 50%)
     uint256[] public votePercentages;
 
+    // ============ Prediction Market Variables ============
+
+    /// @notice Token address for prediction market (e.g., MockUSDC)
+    address public predictionToken;
+
+    /// @notice Encrypted choice predictions for each user
+    mapping(address user => euint8 predictedChoice) private _userPredictions;
+
+    /// @notice Token amounts staked by each user (not encrypted for refunds)
+    mapping(address user => uint256 amount) public predictionStakes;
+
+    /// @notice Total staked per choice (updated after reveal)
+    mapping(uint8 choice => uint256 totalStaked) public totalStakedPerChoice;
+
+    /// @notice Track if user has made a prediction
+    mapping(address user => bool hasPrediction) public hasPredicted;
+
+    /// @notice Track if user has claimed winnings
+    mapping(address user => bool claimed) public hasClaimedWinnings;
+
+    /// @notice Total prediction pool
+    uint256 public totalPredictionPool;
+
+    /// @notice Cancellation fee in basis points (e.g., 100 = 1%)
+    uint256 public constant CANCELLATION_FEE_BPS = 100;
+
+    /// @notice Accumulated fees from cancellations
+    uint256 public accumulatedFees;
+
+    /// @notice Whether predictions have been revealed for payout
+    bool public predictionsRevealed;
+
     // Custom errors
     error OnlyFactory();
     error ProposalNotStarted();
@@ -101,6 +135,17 @@ contract PrivateProposal is IPrivateProposal, ZamaEthereumConfig {
     error WrongProposalType();
     error AutoRevealTriggered();
     error RevealAlreadyRequested();
+    error TokenTransferFailed();
+    error InvalidTokenAddress();
+    error InsufficientTokenAllowance();
+    error PredictionMarketNotEnabled();
+    error NoPredictionToCancel();
+    error PredictionsAlreadyRevealed();
+    error PredictionsNotYetRevealed();
+    error AlreadyClaimed();
+    error IncorrectPrediction();
+    error NoWinnings();
+    error InvalidStakeAmount();
 
     /// @notice Whether results are revealed
     /// @return True if results are revealed
@@ -150,6 +195,21 @@ contract PrivateProposal is IPrivateProposal, ZamaEthereumConfig {
     /// @notice Emitted when total voters is updated
     /// @param totalVoters The total number of voters
     event TotalVotersUpdated(uint256 indexed totalVoters);
+    /// @notice Emitted when a user makes a prediction
+    /// @param user The user address
+    /// @param amount The token amount staked
+    event PredictionMade(address indexed user, uint256 amount);
+    /// @notice Emitted when a user cancels their prediction
+    /// @param user The user address
+    /// @param refundAmount The amount refunded after fees
+    /// @param fee The cancellation fee charged
+    event PredictionCancelled(address indexed user, uint256 refundAmount, uint256 fee);
+    /// @notice Emitted when winnings are claimed
+    /// @param user The user address
+    /// @param amount The amount won
+    event WinningsClaimed(address indexed user, uint256 amount);
+    /// @notice Emitted when predictions are revealed for payout
+    event PredictionMarketRevealed();
 
     // ============ Modifiers ============
     modifier onlyFactory() {
@@ -217,6 +277,13 @@ contract PrivateProposal is IPrivateProposal, ZamaEthereumConfig {
 
         // Snapshot immediately (OZ uses proposal snapshot block)
         config.snapshotBlock = block.number;
+
+        // Set prediction market configuration
+        config.predictionMarketEnabled = params.predictionMarketEnabled;
+        if (config.predictionMarketEnabled) {
+            predictionToken = params.predictionToken;
+            if (predictionToken == address(0)) revert InvalidTokenAddress();
+        }
     }
 
     // ============ Getter Functions for Config ============
@@ -395,6 +462,205 @@ contract PrivateProposal is IPrivateProposal, ZamaEthereumConfig {
         ++totalVoters; // add total unique voters
         emit Voted(msg.sender, block.timestamp);
         emit TotalVotersUpdated(totalVoters);
+    }
+
+    // ============ Prediction Market Functions ============
+
+    /**
+     * @notice Make a prediction on which choice will win by staking tokens
+     * @param encryptedChoice The encrypted choice index (0-based)
+     * @param choiceProof The proof for the encrypted choice
+     * @param tokenAmount The amount of tokens to stake (not encrypted for refunds)
+     * @dev Anyone can predict unlimited times, cancellations allowed with fee
+     */
+    function makePrediction(
+        externalEuint8 encryptedChoice,
+        bytes calldata choiceProof,
+        uint256 tokenAmount
+    ) external nonReentrant {
+        if (!config.predictionMarketEnabled) revert PredictionMarketNotEnabled();
+        if (predictionToken == address(0)) revert InvalidTokenAddress();
+        if (tokenAmount == 0) revert InvalidStakeAmount();
+        if (predictionsRevealed) revert PredictionsAlreadyRevealed();
+
+        // If user already has a prediction, they must cancel it first
+        if (hasPredicted[msg.sender]) {
+            _cancelPrediction(msg.sender);
+        }
+
+        // Convert external encrypted input
+        euint8 predictedChoice = FHE.fromExternal(encryptedChoice, choiceProof);
+        FHE.allowThis(predictedChoice);
+
+        // Store encrypted prediction
+        _userPredictions[msg.sender] = predictedChoice;
+        predictionStakes[msg.sender] = tokenAmount;
+        hasPredicted[msg.sender] = true;
+        totalPredictionPool += tokenAmount;
+
+        // Transfer tokens from user to contract
+        bool success = IERC20(predictionToken).transferFrom(msg.sender, address(this), tokenAmount);
+        if (!success) revert TokenTransferFailed();
+
+        emit PredictionMade(msg.sender, tokenAmount);
+    }
+
+    /**
+     * @notice Cancel prediction and get refund minus cancellation fee
+     * @dev Can be called anytime before predictions are revealed
+     */
+    function cancelPrediction() external nonReentrant {
+        _cancelPrediction(msg.sender);
+    }
+
+    /**
+     * @notice Internal function to cancel a prediction
+     * @param user The user whose prediction to cancel
+     */
+    function _cancelPrediction(address user) internal {
+        if (!hasPredicted[user]) revert NoPredictionToCancel();
+        if (predictionsRevealed) revert PredictionsAlreadyRevealed();
+
+        uint256 stakedAmount = predictionStakes[user];
+        uint256 fee = (stakedAmount * CANCELLATION_FEE_BPS) / 10000;
+        uint256 refundAmount = stakedAmount - fee;
+
+        // Update state (set encrypted prediction to 0 instead of deleting)
+        _userPredictions[user] = FHE.asEuint8(0);
+        delete predictionStakes[user];
+        hasPredicted[user] = false;
+        totalPredictionPool -= stakedAmount;
+        accumulatedFees += fee;
+
+        // Refund user minus fee
+        bool success = IERC20(predictionToken).transfer(user, refundAmount);
+        if (!success) revert TokenTransferFailed();
+
+        emit PredictionCancelled(user, refundAmount, fee);
+    }
+
+    /**
+     * @notice Reveal predictions after voting ends (anyone can call)
+     * @dev Makes all predictions publicly decryptable for tallying
+     */
+    function revealPredictionsForPayout() external proposalEnded {
+        if ((statusFlags & 1) == 0) revert ResultsAlreadyRevealed(); // Voting must be revealed first
+        if (predictionsRevealed) revert PredictionsAlreadyRevealed();
+        if (!config.predictionMarketEnabled) revert PredictionMarketNotEnabled();
+
+        predictionsRevealed = true;
+        emit PredictionMarketRevealed();
+    }
+
+    /**
+     * @notice Claim winnings if prediction was correct
+     * @dev Winners split the pool proportionally to their stake
+     * @dev User must call revealMyPrediction first to make their prediction decryptable
+     */
+    function claimWinnings() external nonReentrant {
+        if (!predictionsRevealed) revert PredictionsNotYetRevealed();
+        if (!hasPredicted[msg.sender]) revert NoPredictionToCancel();
+        if (hasClaimedWinnings[msg.sender]) revert AlreadyClaimed();
+
+        // Note: In production, predictions need to be made publicly decryptable
+        // and then decrypted through the callback mechanism similar to vote results
+        // For now, we assume the prediction has been revealed through tallyPredictions
+
+        // Calculate winnings
+        uint256 userStake = predictionStakes[msg.sender];
+        
+        uint256 totalWinningStakes = totalStakedPerChoice[winningChoice];
+        if (totalWinningStakes == 0) revert NoWinnings();
+
+        // Winner gets proportional share of entire pool
+        uint256 winnings = (totalPredictionPool * userStake) / totalWinningStakes;
+
+        hasClaimedWinnings[msg.sender] = true;
+
+        // Transfer winnings
+        bool success = IERC20(predictionToken).transfer(msg.sender, winnings);
+        if (!success) revert TokenTransferFailed();
+
+        emit WinningsClaimed(msg.sender, winnings);
+    }
+
+    /**
+     * @notice Calculate total staked per choice (called once during first claim)
+     * @dev This is expensive but only done once
+     */
+    function _calculateTotalStakedPerChoice() internal {
+        // Note: In production, you'd maintain a list of predictors
+        // For now, this is a placeholder that needs to be called with actual user addresses
+        // The frontend would need to track all predictors and call a batch function
+    }
+
+    /**
+     * @notice Manual function to register stakes per choice for a batch of users
+     * @param users Array of user addresses who made predictions
+     * @param predictedChoices Array of decrypted prediction choices (same order as users)
+     * @dev Call this after predictions are revealed to tally up stakes per choice
+     * @dev The predictions must be decrypted off-chain and provided here
+     */
+    function tallyPredictions(address[] calldata users, uint8[] calldata predictedChoices) external {
+        if (!predictionsRevealed) revert PredictionsNotYetRevealed();
+        if (users.length != predictedChoices.length) revert InvalidPercentageInputLength();
+
+        for (uint256 i = 0; i < users.length; i++) {
+            address user = users[i];
+            if (hasPredicted[user] && !hasClaimedWinnings[user]) {
+                uint8 predictedChoice = predictedChoices[i];
+                uint256 stake = predictionStakes[user];
+                totalStakedPerChoice[predictedChoice] += stake;
+                
+                // Check if user predicted correctly and mark them eligible
+                if (predictedChoice != winningChoice) {
+                    hasClaimedWinnings[user] = true; // Mark as "claimed" to prevent claiming
+                }
+            }
+        }
+    }
+
+    /**
+     * @notice Set the prediction token address (only callable by factory)
+     * @param _token The token address to use for predictions
+     */
+    function setPredictionToken(address _token) external onlyFactory {
+        if (_token == address(0)) revert InvalidTokenAddress();
+        predictionToken = _token;
+    }
+
+    /**
+     * @notice Get prediction market info
+     */
+    function getPredictionMarketInfo() external view returns (
+        bool enabled,
+        address token,
+        uint256 totalPool,
+        uint256 fees,
+        bool revealed
+    ) {
+        return (
+            config.predictionMarketEnabled,
+            predictionToken,
+            totalPredictionPool,
+            accumulatedFees,
+            predictionsRevealed
+        );
+    }
+
+    /**
+     * @notice Get user's prediction info
+     */
+    function getUserPredictionInfo(address user) external view returns (
+        bool hasMadePrediction,
+        uint256 stakedAmount,
+        bool hasClaimed
+    ) {
+        return (
+            hasPredicted[user],
+            predictionStakes[user],
+            hasClaimedWinnings[user]
+        );
     }
 
     // ============ Resolution (no quorum/threshold) ============

@@ -2,7 +2,7 @@ import { expect } from "chai";
 import { ethers, fhevm } from "hardhat";
 import { time } from "@nomicfoundation/hardhat-network-helpers";
 import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
-import { PrivateProposal, PrivateProposalFactory, SpaceRegistry, MockENS, MockGovernanceToken } from "../types";
+import { PrivateProposal, PrivateProposalFactory, SpaceRegistry, MockENS, MockGovernanceToken, MockUSDC } from "../types";
 import { CreateProposalParamsStruct } from "../types/contracts/IProposalFactory";
 import { FhevmType } from "@fhevm/hardhat-plugin";
 import * as hre from "hardhat";
@@ -12,6 +12,7 @@ describe("PrivateProposal Voting and Resolution", function () {
   let spaceRegistry: SpaceRegistry;
   let mockENS: MockENS;
   let mockToken: MockGovernanceToken;
+  let mockUSDC: MockUSDC;
   let owner: HardhatEthersSigner;
   let user1: HardhatEthersSigner;
   let user2: HardhatEthersSigner;
@@ -30,7 +31,9 @@ describe("PrivateProposal Voting and Resolution", function () {
     ELIGIBILITY_TOKEN: ethers.ZeroAddress,
     ELIGIBILITY_THRESHOLD: 0,
     INCLUDE_ABSTAIN: false,
-    PASSING_THRESHOLD: 0
+    PASSING_THRESHOLD: 0,
+    PREDICTION_MARKET_ENABLED: false,
+    PREDICTION_TOKEN: ethers.ZeroAddress
   };
 
   beforeEach(async function () {
@@ -51,6 +54,15 @@ describe("PrivateProposal Voting and Resolution", function () {
     await mockToken.connect(user1).delegate(user1.address);
     await mockToken.connect(user2).delegate(user2.address);
     await mockToken.connect(user3).delegate(user3.address);
+
+    // Deploy MockUSDC for prediction market
+    const MockUSDCFactory = await ethers.getContractFactory("MockUSDC");
+    mockUSDC = await MockUSDCFactory.deploy();
+    
+    // Mint USDC for users
+    await mockUSDC.mint(user1.address, ethers.parseUnits("10000", 6)); // 10,000 USDC
+    await mockUSDC.mint(user2.address, ethers.parseUnits("20000", 6)); // 20,000 USDC
+    await mockUSDC.mint(user3.address, ethers.parseUnits("5000", 6));  // 5,000 USDC
 
     // Deploy SpaceRegistry
     const SpaceRegistryFactory = await ethers.getContractFactory("SpaceRegistry");
@@ -109,6 +121,8 @@ describe("PrivateProposal Voting and Resolution", function () {
         eligibilityThreshold: PROPOSAL_CONFIG.ELIGIBILITY_THRESHOLD,
         includeAbstain: PROPOSAL_CONFIG.INCLUDE_ABSTAIN,
         passingThreshold: PROPOSAL_CONFIG.PASSING_THRESHOLD,
+        predictionMarketEnabled: PROPOSAL_CONFIG.PREDICTION_MARKET_ENABLED,
+        predictionToken: PROPOSAL_CONFIG.PREDICTION_TOKEN,
       };
 
       const tx = await factory.createProposal(params);
@@ -268,6 +282,8 @@ describe("PrivateProposal Voting and Resolution", function () {
         eligibilityThreshold: 1,
         includeAbstain: PROPOSAL_CONFIG.INCLUDE_ABSTAIN,
         passingThreshold: PROPOSAL_CONFIG.PASSING_THRESHOLD,
+        predictionMarketEnabled: PROPOSAL_CONFIG.PREDICTION_MARKET_ENABLED,
+        predictionToken: PROPOSAL_CONFIG.PREDICTION_TOKEN,
       };
 
       const tx = await factory.createProposal(params);
@@ -397,6 +413,8 @@ describe("PrivateProposal Voting and Resolution", function () {
         eligibilityThreshold: 1,
         includeAbstain: PROPOSAL_CONFIG.INCLUDE_ABSTAIN,
         passingThreshold: PROPOSAL_CONFIG.PASSING_THRESHOLD,
+        predictionMarketEnabled: PROPOSAL_CONFIG.PREDICTION_MARKET_ENABLED,
+        predictionToken: PROPOSAL_CONFIG.PREDICTION_TOKEN,
       };
 
       const tx = await factory.createProposal(params);
@@ -546,6 +564,8 @@ describe("PrivateProposal Voting and Resolution", function () {
         eligibilityThreshold: PROPOSAL_CONFIG.ELIGIBILITY_THRESHOLD,
         includeAbstain: true, // Include abstain
         passingThreshold: PROPOSAL_CONFIG.PASSING_THRESHOLD,
+        predictionMarketEnabled: PROPOSAL_CONFIG.PREDICTION_MARKET_ENABLED,
+        predictionToken: PROPOSAL_CONFIG.PREDICTION_TOKEN,
       };
 
       const tx = await factory.createProposal(params);
@@ -661,6 +681,8 @@ describe("PrivateProposal Voting and Resolution", function () {
         eligibilityThreshold: PROPOSAL_CONFIG.ELIGIBILITY_THRESHOLD,
         includeAbstain: PROPOSAL_CONFIG.INCLUDE_ABSTAIN,
         passingThreshold: 5000, // 50% threshold
+        predictionMarketEnabled: PROPOSAL_CONFIG.PREDICTION_MARKET_ENABLED,
+        predictionToken: PROPOSAL_CONFIG.PREDICTION_TOKEN,
       };
 
       const tx = await factory.createProposal(params);
@@ -755,6 +777,415 @@ describe("PrivateProposal Voting and Resolution", function () {
       // Should be a draw - neither has >50% of 4 total votes
       expect(await proposal.proposalPassed()).to.be.false;
       expect(await proposal.winningChoice()).to.equal(255); // Draw sentinel value
+    });
+  });
+
+  describe("Prediction Market", function () {
+    let proposal: PrivateProposal;
+
+    beforeEach(async function () {
+      const spaceId = (global as any).testSpaceId;
+      const currentTime = await time.latest();
+      const startTime = currentTime + PROPOSAL_CONFIG.START_OFFSET;
+      const endTime = startTime + PROPOSAL_CONFIG.DURATION;
+
+      const params: CreateProposalParamsStruct = {
+        spaceId: spaceId,
+        title: "Prediction Market Test",
+        bodyURI: PROPOSAL_CONFIG.BODY_URI,
+        pType: 0, // NonWeightedSingleChoice
+        choices: ["Yes", "No"],
+        start: startTime,
+        end: endTime,
+        eligibilityType: 0, // Public
+        eligibilityToken: ethers.ZeroAddress,
+        eligibilityThreshold: 0,
+        includeAbstain: false,
+        passingThreshold: 0,
+        predictionMarketEnabled: true, // Enable prediction market
+        predictionToken: mockUSDC.target, // Use USDC for predictions
+      };
+
+      const tx = await factory.createProposal(params);
+      const receipt = await tx.wait();
+      const event = receipt!.logs.find(log => {
+        try {
+          return factory.interface.parseLog(log)?.name === "ProposalCreated";
+        } catch {
+          return false;
+        }
+      });
+      const parsedEvent = factory.interface.parseLog(event!);
+      const proposalAddress = parsedEvent!.args[2];
+
+      proposal = await ethers.getContractAt("PrivateProposal", proposalAddress);
+
+      // Advance time to start the proposal
+      await time.increase(PROPOSAL_CONFIG.START_OFFSET + 10);
+    });
+
+    it("Should allow users to make predictions with token stakes", async function () {
+      const stakeAmount = ethers.parseUnits("100", 6); // 100 USDC
+
+      // User1 approves and predicts choice 0 (Yes)
+      await mockUSDC.connect(user1).approve(proposal.target, stakeAmount);
+      
+      const encryptedPrediction1 = await fhevm
+        .createEncryptedInput(proposal.target.toString(), user1.address)
+        .add8(0)
+        .encrypt();
+      
+      await proposal.connect(user1).makePrediction(
+        encryptedPrediction1.handles[0],
+        encryptedPrediction1.inputProof,
+        stakeAmount
+      );
+
+      // Check prediction was recorded
+      expect(await proposal.hasPredicted(user1.address)).to.be.true;
+      expect(await proposal.predictionStakes(user1.address)).to.equal(stakeAmount);
+      expect(await proposal.totalPredictionPool()).to.equal(stakeAmount);
+    });
+
+    it("Should allow users to update predictions (auto-cancel previous)", async function () {
+      const stakeAmount1 = ethers.parseUnits("100", 6);
+      const stakeAmount2 = ethers.parseUnits("200", 6);
+
+      // First prediction
+      await mockUSDC.connect(user1).approve(proposal.target, stakeAmount1);
+      const encryptedPrediction1 = await fhevm
+        .createEncryptedInput(proposal.target.toString(), user1.address)
+        .add8(0)
+        .encrypt();
+      await proposal.connect(user1).makePrediction(
+        encryptedPrediction1.handles[0],
+        encryptedPrediction1.inputProof,
+        stakeAmount1
+      );
+
+      const balanceBefore = await mockUSDC.balanceOf(user1.address);
+
+      // Second prediction (should auto-cancel first)
+      await mockUSDC.connect(user1).approve(proposal.target, stakeAmount2);
+      const encryptedPrediction2 = await fhevm
+        .createEncryptedInput(proposal.target.toString(), user1.address)
+        .add8(1)
+        .encrypt();
+      await proposal.connect(user1).makePrediction(
+        encryptedPrediction2.handles[0],
+        encryptedPrediction2.inputProof,
+        stakeAmount2
+      );
+
+      // User should have received 99% refund of first stake
+      const balanceAfter = await mockUSDC.balanceOf(user1.address);
+      const expectedRefund = (stakeAmount1 * 99n) / 100n;
+      expect(balanceAfter).to.equal(balanceBefore + expectedRefund - stakeAmount2);
+
+      // Pool should only contain second stake
+      expect(await proposal.totalPredictionPool()).to.equal(stakeAmount2);
+      expect(await proposal.predictionStakes(user1.address)).to.equal(stakeAmount2);
+    });
+
+    it("Should allow users to cancel predictions with 1% fee", async function () {
+      const stakeAmount = ethers.parseUnits("1000", 6);
+
+      // Make prediction
+      await mockUSDC.connect(user1).approve(proposal.target, stakeAmount);
+      const encryptedPrediction = await fhevm
+        .createEncryptedInput(proposal.target.toString(), user1.address)
+        .add8(0)
+        .encrypt();
+      await proposal.connect(user1).makePrediction(
+        encryptedPrediction.handles[0],
+        encryptedPrediction.inputProof,
+        stakeAmount
+      );
+
+      const balanceBefore = await mockUSDC.balanceOf(user1.address);
+
+      // Cancel prediction
+      await proposal.connect(user1).cancelPrediction();
+
+      const balanceAfter = await mockUSDC.balanceOf(user1.address);
+      const expectedRefund = (stakeAmount * 99n) / 100n; // 99% refund
+      const expectedFee = (stakeAmount * 1n) / 100n; // 1% fee
+
+      expect(balanceAfter).to.equal(balanceBefore + expectedRefund);
+      expect(await proposal.accumulatedFees()).to.equal(expectedFee);
+      expect(await proposal.hasPredicted(user1.address)).to.be.false;
+      expect(await proposal.totalPredictionPool()).to.equal(0);
+    });
+
+    it("Should prevent predictions after reveal", async function () {
+      const stakeAmount = ethers.parseUnits("100", 6);
+
+      // Cast some votes first
+      const encryptedVote1 = await fhevm
+        .createEncryptedInput(proposal.target.toString(), user1.address)
+        .add8(0)
+        .encrypt();
+      await proposal.connect(user1).voteNonweighted(encryptedVote1.handles[0], encryptedVote1.inputProof);
+
+      // Advance time past proposal end
+      await time.increase(3700);
+
+      // Perform upkeep and reveal
+      const [upkeepNeeded, performData] = await factory.checkUpkeep("0x");
+      const tx = await factory.performUpkeep(performData);
+      const receipt = await tx.wait();
+
+      const tallyRevealEvent = receipt!.logs.find((log: any) => {
+        try {
+          return proposal.interface.parseLog(log)?.name === 'TallyRevealRequested';
+        } catch {
+          return false;
+        }
+      });
+      const parsedEvent = proposal.interface.parseLog(tallyRevealEvent!);
+      const choiceVoteHandles: `0x${string}`[] = parsedEvent?.args[0];
+      const publicDecryptResults = await fhevm.publicDecrypt(choiceVoteHandles);
+
+      await proposal.resolveProposalCallback(
+        proposal.target,
+        publicDecryptResults.abiEncodedClearValues,
+        publicDecryptResults.decryptionProof
+      );
+
+      // Reveal predictions for payout
+      await proposal.revealPredictionsForPayout();
+
+      // Try to make prediction after reveal
+      await mockUSDC.connect(user2).approve(proposal.target, stakeAmount);
+      const encryptedPrediction = await fhevm
+        .createEncryptedInput(proposal.target.toString(), user2.address)
+        .add8(0)
+        .encrypt();
+
+      await expect(
+        proposal.connect(user2).makePrediction(
+          encryptedPrediction.handles[0],
+          encryptedPrediction.inputProof,
+          stakeAmount
+        )
+      ).to.be.revertedWithCustomError(proposal, "PredictionsAlreadyRevealed");
+    });
+
+    it("Should allow winners to claim proportional winnings", async function () {
+      // User1 predicts Yes with 1000 USDC
+      const stake1 = ethers.parseUnits("1000", 6);
+      await mockUSDC.connect(user1).approve(proposal.target, stake1);
+      const encryptedPrediction1 = await fhevm
+        .createEncryptedInput(proposal.target.toString(), user1.address)
+        .add8(0)
+        .encrypt();
+      await proposal.connect(user1).makePrediction(
+        encryptedPrediction1.handles[0],
+        encryptedPrediction1.inputProof,
+        stake1
+      );
+
+      // User2 predicts No with 2000 USDC
+      const stake2 = ethers.parseUnits("2000", 6);
+      await mockUSDC.connect(user2).approve(proposal.target, stake2);
+      const encryptedPrediction2 = await fhevm
+        .createEncryptedInput(proposal.target.toString(), user2.address)
+        .add8(1)
+        .encrypt();
+      await proposal.connect(user2).makePrediction(
+        encryptedPrediction2.handles[0],
+        encryptedPrediction2.inputProof,
+        stake2
+      );
+
+      // User3 predicts Yes with 500 USDC
+      const stake3 = ethers.parseUnits("500", 6);
+      await mockUSDC.connect(user3).approve(proposal.target, stake3);
+      const encryptedPrediction3 = await fhevm
+        .createEncryptedInput(proposal.target.toString(), user3.address)
+        .add8(0)
+        .encrypt();
+      await proposal.connect(user3).makePrediction(
+        encryptedPrediction3.handles[0],
+        encryptedPrediction3.inputProof,
+        stake3
+      );
+
+      // Cast votes - Yes wins
+      const encryptedVote1 = await fhevm
+        .createEncryptedInput(proposal.target.toString(), user1.address)
+        .add8(0)
+        .encrypt();
+      await proposal.connect(user1).voteNonweighted(encryptedVote1.handles[0], encryptedVote1.inputProof);
+
+      const encryptedVote2 = await fhevm
+        .createEncryptedInput(proposal.target.toString(), user2.address)
+        .add8(0)
+        .encrypt();
+      await proposal.connect(user2).voteNonweighted(encryptedVote2.handles[0], encryptedVote2.inputProof);
+
+      // Advance time and resolve
+      await time.increase(3700);
+      const [upkeepNeeded, performData] = await factory.checkUpkeep("0x");
+      const tx = await factory.performUpkeep(performData);
+      const receipt = await tx.wait();
+
+      const tallyRevealEvent = receipt!.logs.find((log: any) => {
+        try {
+          return proposal.interface.parseLog(log)?.name === 'TallyRevealRequested';
+        } catch {
+          return false;
+        }
+      });
+      const parsedEvent = proposal.interface.parseLog(tallyRevealEvent!);
+      const choiceVoteHandles: `0x${string}`[] = parsedEvent?.args[0];
+      const publicDecryptResults = await fhevm.publicDecrypt(choiceVoteHandles);
+
+      await proposal.resolveProposalCallback(
+        proposal.target,
+        publicDecryptResults.abiEncodedClearValues,
+        publicDecryptResults.decryptionProof
+      );
+
+      // Reveal predictions
+      await proposal.revealPredictionsForPayout();
+
+      // Tally predictions (provide decrypted predictions)
+      await proposal.tallyPredictions(
+        [user1.address, user2.address, user3.address],
+        [0, 1, 0] // user1: Yes, user2: No, user3: Yes
+      );
+
+      // Total pool: 3500 USDC
+      // Winners (Yes): user1 (1000) + user3 (500) = 1500 total winning stakes
+      // User1 should get: (3500 * 1000) / 1500 = 2333.33 USDC
+      // User3 should get: (3500 * 500) / 1500 = 1166.67 USDC
+
+      const balance1Before = await mockUSDC.balanceOf(user1.address);
+      await proposal.connect(user1).claimWinnings();
+      const balance1After = await mockUSDC.balanceOf(user1.address);
+
+      const expectedWinnings1 = (ethers.parseUnits("3500", 6) * stake1) / (stake1 + stake3);
+      expect(balance1After - balance1Before).to.equal(expectedWinnings1);
+
+      const balance3Before = await mockUSDC.balanceOf(user3.address);
+      await proposal.connect(user3).claimWinnings();
+      const balance3After = await mockUSDC.balanceOf(user3.address);
+
+      const expectedWinnings3 = (ethers.parseUnits("3500", 6) * stake3) / (stake1 + stake3);
+      expect(balance3After - balance3Before).to.equal(expectedWinnings3);
+
+      // User2 (loser) should not be able to claim
+      await expect(
+        proposal.connect(user2).claimWinnings()
+      ).to.be.revertedWithCustomError(proposal, "AlreadyClaimed"); // Marked as claimed in tallyPredictions
+    });
+
+    it("Should prevent double claiming", async function () {
+      const stake1 = ethers.parseUnits("1000", 6);
+      await mockUSDC.connect(user1).approve(proposal.target, stake1);
+      const encryptedPrediction1 = await fhevm
+        .createEncryptedInput(proposal.target.toString(), user1.address)
+        .add8(0)
+        .encrypt();
+      await proposal.connect(user1).makePrediction(
+        encryptedPrediction1.handles[0],
+        encryptedPrediction1.inputProof,
+        stake1
+      );
+
+      // Cast vote
+      const encryptedVote1 = await fhevm
+        .createEncryptedInput(proposal.target.toString(), user1.address)
+        .add8(0)
+        .encrypt();
+      await proposal.connect(user1).voteNonweighted(encryptedVote1.handles[0], encryptedVote1.inputProof);
+
+      // Resolve
+      await time.increase(3700);
+      const [upkeepNeeded, performData] = await factory.checkUpkeep("0x");
+      const tx = await factory.performUpkeep(performData);
+      const receipt = await tx.wait();
+
+      const tallyRevealEvent = receipt!.logs.find((log: any) => {
+        try {
+          return proposal.interface.parseLog(log)?.name === 'TallyRevealRequested';
+        } catch {
+          return false;
+        }
+      });
+      const parsedEvent = proposal.interface.parseLog(tallyRevealEvent!);
+      const choiceVoteHandles: `0x${string}`[] = parsedEvent?.args[0];
+      const publicDecryptResults = await fhevm.publicDecrypt(choiceVoteHandles);
+
+      await proposal.resolveProposalCallback(
+        proposal.target,
+        publicDecryptResults.abiEncodedClearValues,
+        publicDecryptResults.decryptionProof
+      );
+
+      await proposal.revealPredictionsForPayout();
+      await proposal.tallyPredictions([user1.address], [0]);
+
+      // Claim once
+      await proposal.connect(user1).claimWinnings();
+
+      // Try to claim again
+      await expect(
+        proposal.connect(user1).claimWinnings()
+      ).to.be.revertedWithCustomError(proposal, "AlreadyClaimed");
+    });
+
+    it("Should return correct prediction market info", async function () {
+      const info = await proposal.getPredictionMarketInfo();
+      
+      expect(info.enabled).to.be.true;
+      expect(info.token).to.equal(mockUSDC.target);
+      expect(info.totalPool).to.equal(0);
+      expect(info.fees).to.equal(0);
+      expect(info.revealed).to.be.false;
+
+      // Make a prediction
+      const stake = ethers.parseUnits("100", 6);
+      await mockUSDC.connect(user1).approve(proposal.target, stake);
+      const encryptedPrediction = await fhevm
+        .createEncryptedInput(proposal.target.toString(), user1.address)
+        .add8(0)
+        .encrypt();
+      await proposal.connect(user1).makePrediction(
+        encryptedPrediction.handles[0],
+        encryptedPrediction.inputProof,
+        stake
+      );
+
+      const infoAfter = await proposal.getPredictionMarketInfo();
+      expect(infoAfter.totalPool).to.equal(stake);
+    });
+
+    it("Should return correct user prediction info", async function () {
+      const stake = ethers.parseUnits("100", 6);
+      
+      let userInfo = await proposal.getUserPredictionInfo(user1.address);
+      expect(userInfo.hasMadePrediction).to.be.false;
+      expect(userInfo.stakedAmount).to.equal(0);
+      expect(userInfo.hasClaimed).to.be.false;
+
+      // Make prediction
+      await mockUSDC.connect(user1).approve(proposal.target, stake);
+      const encryptedPrediction = await fhevm
+        .createEncryptedInput(proposal.target.toString(), user1.address)
+        .add8(0)
+        .encrypt();
+      await proposal.connect(user1).makePrediction(
+        encryptedPrediction.handles[0],
+        encryptedPrediction.inputProof,
+        stake
+      );
+
+      userInfo = await proposal.getUserPredictionInfo(user1.address);
+      expect(userInfo.hasMadePrediction).to.be.true;
+      expect(userInfo.stakedAmount).to.equal(stake);
+      expect(userInfo.hasClaimed).to.be.false;
     });
   });
 });

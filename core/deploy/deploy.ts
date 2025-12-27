@@ -125,6 +125,30 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   }
 
   // ============================================
+  // 6. Deploy MockUSDC (for Prediction Markets)
+  // ============================================
+  const deployedMockUSDC = await deploy("MockUSDC", {
+    from: deployer,
+    log: true,
+  });
+  console.log(`✅ MockUSDC deployed at: ${deployedMockUSDC.address}`);
+
+  // Wait for confirmations
+  console.log("⏳ Waiting 10 seconds for confirmations...");
+  await new Promise(resolve => setTimeout(resolve, 10000));
+
+  // Verify MockUSDC
+  try {
+    await hre.run("verify:verify", {
+      address: deployedMockUSDC.address,
+      constructorArguments: [],
+    });
+    console.log(`✅ MockUSDC verified`);
+  } catch (error) {
+    console.log(`❌ MockUSDC verification failed: ${error}`);
+  }
+
+  // ============================================
   // Deployment Complete
   // ============================================
   console.log("\n🎉 All contracts deployed successfully!");
@@ -133,8 +157,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   console.log(`ProposalAutomation: ${deployedProposalAutomation.address}`);
   console.log(`PrivateProposalFactory: ${deployedPrivateProposalFactory.address}`);
   console.log(`MockGovernanceToken: ${deployedMockGovernanceToken.address}`);
+  console.log(`MockUSDC: ${deployedMockUSDC.address}`);
 };
 
 export default func;
 func.id = "deploy_Agora_Contracts";
-func.tags = ["MockENS", "SpaceRegistry", "ProposalAutomation", "PrivateProposalFactory", "MockGovernanceToken", "Complete"];
+func.tags = ["MockENS", "SpaceRegistry", "ProposalAutomation", "PrivateProposalFactory", "MockGovernanceToken", "MockUSDC", "Complete"];
