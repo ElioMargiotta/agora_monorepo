@@ -1,6 +1,6 @@
 "use client";
 import { OnchainWallet } from '@/components/wallet/OnchainWallet';
-import { LayoutDashboard, Users, Plus, Search, Home } from 'lucide-react';
+import { LayoutDashboard, Users, Plus, Search, Home, TrendingUp } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import Image from 'next/image';
 import { useState, useEffect } from 'react';
@@ -37,6 +37,14 @@ export function AppHeader() {
         { name: 'My Spaces', href: '/app/spaces/my', icon: Users },
         { name: 'Create Space', href: '/app/spaces/create', icon: Plus },
         { name: 'Explore Spaces', href: '/app/spaces', icon: Search },
+      ]
+    },
+    {
+      name: 'Prediction Market',
+      href: '/app/prediction',
+      icon: TrendingUp,
+      submenu: [
+        { name: 'All Markets', href: '/app/prediction', icon: TrendingUp },
       ]
     }
   ];

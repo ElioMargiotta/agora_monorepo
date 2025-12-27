@@ -7,7 +7,8 @@ import {
   LayoutDashboard, 
   Users, 
   Plus,
-  Search
+  Search,
+  TrendingUp
 } from 'lucide-react';
 
 const bottomNavItems = [
@@ -26,9 +27,16 @@ const bottomNavItems = [
     comingSoon: false,
   },
   {
+    href: '/app/prediction',
+    icon: TrendingUp,
+    label: 'Markets',
+    exactMatch: false,
+    comingSoon: false,
+  },
+  {
     href: '/app/spaces/create',
     icon: Plus,
-    label: 'Create Space',
+    label: 'Create',
     exactMatch: false,
     comingSoon: false,
   },
