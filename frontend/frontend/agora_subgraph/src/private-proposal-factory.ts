@@ -40,6 +40,8 @@ export function handleProposalCreated(event: ProposalCreatedEvent): void {
   entity.p_pType = event.params.p.pType
   entity.p_eligibilityType = event.params.p.eligibilityType
   entity.p_includeAbstain = event.params.p.includeAbstain
+  entity.p_predictionMarketEnabled = event.params.p.predictionMarketEnabled
+  entity.p_predictionToken = event.params.p.predictionToken
   entity.p_title = event.params.p.title
   entity.p_bodyURI = event.params.p.bodyURI
   entity.p_choices = event.params.p.choices

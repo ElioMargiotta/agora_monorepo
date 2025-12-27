@@ -22,6 +22,8 @@ type ProposalCreated @entity(immutable: true) {
   p_pType: Int! # uint8
   p_eligibilityType: Int! # uint8
   p_includeAbstain: Boolean! # bool
+  p_predictionMarketEnabled: Boolean! # bool
+  p_predictionToken: Bytes! # address
   p_title: String! # string
   p_bodyURI: String! # string
   p_choices: [String!]! # string[]
@@ -184,6 +186,41 @@ type Voted @entity(immutable: true) {
   id: Bytes!
   user: Bytes! # address
   timestamp: BigInt! # uint256
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type PredictionMade @entity(immutable: true) {
+  id: Bytes!
+  user: Bytes! # address
+  amount: BigInt! # uint256
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type PredictionCancelled @entity(immutable: true) {
+  id: Bytes!
+  user: Bytes! # address
+  refundAmount: BigInt! # uint256
+  fee: BigInt! # uint256
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type WinningsClaimed @entity(immutable: true) {
+  id: Bytes!
+  user: Bytes! # address
+  amount: BigInt! # uint256
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type PredictionMarketRevealed @entity(immutable: true) {
+  id: Bytes!
   blockNumber: BigInt!
   blockTimestamp: BigInt!
   transactionHash: Bytes!

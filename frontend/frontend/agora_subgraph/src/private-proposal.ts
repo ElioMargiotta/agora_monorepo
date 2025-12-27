@@ -7,6 +7,10 @@ import {
   TotalVotersUpdated as TotalVotersUpdatedEvent,
   VotePercentagesRevealed as VotePercentagesRevealedEvent,
   Voted as VotedEvent,
+  PredictionMade as PredictionMadeEvent,
+  PredictionCancelled as PredictionCancelledEvent,
+  WinningsClaimed as WinningsClaimedEvent,
+  PredictionMarketRevealed as PredictionMarketRevealedEvent,
 } from "../generated/PrivateProposal/PrivateProposal"
 import {
   ProposalResolved,
@@ -17,6 +21,10 @@ import {
   TotalVotersUpdated,
   VotePercentagesRevealed,
   Voted,
+  PredictionMade,
+  PredictionCancelled,
+  WinningsClaimed,
+  PredictionMarketRevealed,
 } from "../generated/schema"
 
 export function handleProposalResolved(event: ProposalResolvedEvent): void {
@@ -131,3 +139,60 @@ export function handleVoted(event: VotedEvent): void {
 
   entity.save()
 }
+
+export function handlePredictionMade(event: PredictionMadeEvent): void {
+  let entity = new PredictionMade(
+    event.transaction.hash.concatI32(event.logIndex.toI32()),
+  )
+  entity.user = event.params.user
+  entity.amount = event.params.amount
+
+  entity.blockNumber = event.block.number
+  entity.blockTimestamp = event.block.timestamp
+  entity.transactionHash = event.transaction.hash
+
+  entity.save()
+}
+
+export function handlePredictionCancelled(event: PredictionCancelledEvent): void {
+  let entity = new PredictionCancelled(
+    event.transaction.hash.concatI32(event.logIndex.toI32()),
+  )
+  entity.user = event.params.user
+  entity.refundAmount = event.params.refundAmount
+  entity.fee = event.params.fee
+
+  entity.blockNumber = event.block.number
+  entity.blockTimestamp = event.block.timestamp
+  entity.transactionHash = event.transaction.hash
+
+  entity.save()
+}
+
+export function handleWinningsClaimed(event: WinningsClaimedEvent): void {
+  let entity = new WinningsClaimed(
+    event.transaction.hash.concatI32(event.logIndex.toI32()),
+  )
+  entity.user = event.params.user
+  entity.amount = event.params.amount
+
+  entity.blockNumber = event.block.number
+  entity.blockTimestamp = event.block.timestamp
+  entity.transactionHash = event.transaction.hash
+
+  entity.save()
+}
+
+export function handlePredictionMarketRevealed(event: PredictionMarketRevealedEvent): void {
+  let entity = new PredictionMarketRevealed(
+    event.transaction.hash.concatI32(event.logIndex.toI32()),
+  )
+
+  entity.blockNumber = event.block.number
+  entity.blockTimestamp = event.block.timestamp
+  entity.transactionHash = event.transaction.hash
+
+  entity.save()
+}
+
+

@@ -8,9 +8,10 @@ dataSources:
     name: PrivateProposalFactory
     network: sepolia
     source:
-      address: "0x2E04e1BaC41D3c56b7174aC83f17753d3cEB56F4"
+      address: "0x2AA5bd99fBa98c765060D7A4A2E4896860B72c37"
       abi: PrivateProposalFactory
-      startBlock: 9740701
+      startBlock: 9921684
+
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.9
@@ -26,7 +27,7 @@ dataSources:
         - event: ProposalCancelled(indexed address,string,indexed address)
           handler: handleProposalCancelled
         - event: ProposalCreated(indexed bytes32,indexed
-            bytes32,address,(bytes32,uint64,uint64,address,uint256,uint256,uint8,uint8,bool,string,string,string[]))
+            bytes32,address,(bytes32,uint64,uint64,address,uint256,uint256,uint8,uint8,bool,bool,address,string,string,string[]))
           handler: handleProposalCreated
         - event: UpkeepPerformed(indexed address,indexed uint256)
           handler: handleUpkeepPerformed
@@ -37,7 +38,8 @@ dataSources:
     source:
       address: "0x96eEFbc1452F9324a7422399c5149b8a7f011fb1"
       abi: SpaceRegistry
-      startBlock: 9740701
+      startBlock: 9921684
+
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.9
@@ -79,9 +81,10 @@ dataSources:
     name: PrivateProposal
     network: sepolia
     source:
-      address: "0x57aD2E61f4F751a1a745FcD7bA3Dde1d343A2fA2"
+      address: "0x56a2c8D39c7Cb8657A13DE7F32412b2e0B5C1f9A"
       abi: PrivateProposal
-      startBlock: 9740701
+      startBlock: 9921684
+
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.9
@@ -95,6 +98,10 @@ dataSources:
         - TotalVotersUpdated
         - VotePercentagesRevealed
         - Voted
+        - PredictionMade
+        - PredictionCancelled
+        - WinningsClaimed
+        - PredictionMarketRevealed
       abis:
         - name: PrivateProposal
           file: ./abis/PrivateProposal.json
@@ -115,4 +122,12 @@ dataSources:
           handler: handleVotePercentagesRevealed
         - event: Voted(indexed address,indexed uint256)
           handler: handleVoted
+        - event: PredictionMade(indexed address,uint256)
+          handler: handlePredictionMade
+        - event: PredictionCancelled(indexed address,uint256,uint256)
+          handler: handlePredictionCancelled
+        - event: WinningsClaimed(indexed address,uint256)
+          handler: handleWinningsClaimed
+        - event: PredictionMarketRevealed()
+          handler: handlePredictionMarketRevealed
       file: ./src/private-proposal.ts
