@@ -24,6 +24,7 @@ The core purpose of Agora is to democratize governance by solving the fundamenta
 ### For Community Members
 - **Submit Proposals**: Create and submit governance proposals with rich text descriptions and attachments
 - **Vote Anonymously**: Cast encrypted votes that remain private throughout the process
+- **Stake on Predictions**: Participate in prediction markets by staking tokens on encrypted outcome predictions
 - **Track Outcomes**: View verifiable results and proposal statuses in real-time
 - **Participate Securely**: Engage in governance without revealing your identity or voting preferences
 
@@ -81,6 +82,7 @@ Participate in governance with full privacy:
 - **Ethers.js**: Ethereum JavaScript library
 - **Zama FHE**: Fully Homomorphic Encryption for privacy-preserving computation
 - **Chainlink Automation**: Decentralized oracle network for automated processes
+- **OpenZeppelin**: Secure smart contract libraries (ERC20, ReentrancyGuard)
 - **Infura**: RPC provider for Ethereum network access
 
 ### Data & Indexing
@@ -97,8 +99,9 @@ Participate in governance with full privacy:
 ### Smart Contracts
 - **SpaceRegistry.sol**: Manages creation and registration of governance spaces
 - **PrivateProposalFactory.sol**: Factory contract for deploying new proposal instances
-- **PrivateProposal.sol**: Core contract handling encrypted voting logic
-- **MockGovernanceToken.sol**: Mock Ivotes token for testing voting eligibility
+- **PrivateProposal.sol**: Core contract handling encrypted voting logic and optional prediction markets
+- **MockGovernanceToken.sol**: Mock IVotes token for testing token-weighted voting
+- **MockUSDC.sol**: Mock stablecoin for prediction market staking
 
 ### Subgraphs
 - **agora-subgraph**: Comprehensive indexing of spaces, proposals, and voting activities

@@ -8,7 +8,7 @@ The test suite covers all major voting types and resolution scenarios using Hard
 
 ## Full Test Suite Results
 
-Running `npx hardhat test` produces the following results (85 passing tests):
+Running `npx hardhat test` produces the following results (93 passing tests):
 
 ```
   MockENS
@@ -118,7 +118,7 @@ Running `npx hardhat test` produces the following results (85 passing tests):
     Non-Weighted Single Choice Voting
       ✔ Should allow users to vote with encrypted choices
       ✔ Should prevent double voting
-      ✔ Should resolve proposal correctly after voting (59ms)
+      ✔ Should resolve proposal correctly after voting (54ms)
     Weighted Single Choice Voting
       ✔ Should allow weighted voting based on token balance
       ✔ Should resolve weighted voting correctly
@@ -129,10 +129,19 @@ Running `npx hardhat test` produces the following results (85 passing tests):
       ✔ Should include abstain as the last choice
       ✔ Should exclude abstain votes from winner calculation
     Passing Threshold Logic
-      ✔ Should handle draw correctly (41ms)
+      ✔ Should handle draw correctly
+    Prediction Market
+      ✔ Should allow users to make predictions with token stakes
+      ✔ Should allow users to update predictions (auto-cancel previous)
+      ✔ Should allow users to cancel predictions with 1% fee
+      ✔ Should prevent predictions after reveal
+      ✔ Should allow winners to claim proportional winnings (46ms)
+      ✔ Should prevent double claiming
+      ✔ Should return correct prediction market info
+      ✔ Should return correct user prediction info
 
 
-  85 passing (2s)
+  93 passing (2s)
 ```
 
 ## Test Categories and Results
@@ -149,8 +158,8 @@ Running `npx hardhat test` produces the following results (85 passing tests):
 **Description**: Tests proposal factory deployment, creation, management, and Chainlink Automation integration.
 - Covers proposal lifecycle, validation, and upkeep detection/performance.
 
-### ✅ PrivateProposal Voting and Resolution Tests (14 passing)
-**Description**: Tests encrypted voting mechanisms and resolution logic.
+### ✅ PrivateProposal Voting and Resolution Tests (22 passing)
+**Description**: Tests encrypted voting mechanisms, resolution logic, and prediction markets.
 
 **Tests Performed**:
 - **User Voting**: Verifies users can vote with encrypted choices (passes).
@@ -197,9 +206,51 @@ Running `npx hardhat test` produces the following results (85 passing tests):
 
 **Expected Behavior**: 2 "Yes", 2 "No" with 50% threshold → Draw (neither exceeds 50%).
 
+### ✅ Prediction Market (8 passing)
+**Description**: Tests the optional prediction market feature where users stake tokens on encrypted predictions of voting outcomes. The prediction market uses a separate token (MockUSDC) specified via the `predictionToken` parameter, independent from governance tokens used for voting.
+
+**Test Configuration**: 
+- Voting: Public (no token required)
+- Prediction Token: MockUSDC
+- Users minted: User1 (10,000 USDC), User2 (20,000 USDC), User3 (5,000 USDC)
+
+**Tests Performed**:
+- **Make Predictions**: Verifies users can stake USDC tokens on encrypted choice predictions (passes).
+  - User1 stakes 100 USDC on choice 0, prediction recorded and pool updated.
+  
+- **Update Predictions**: Tests automatic cancellation of previous predictions with 99% refund (passes).
+  - User1 makes prediction (100 USDC), then updates to new prediction (200 USDC).
+  - Receives 99 USDC refund (99%), 1 USDC fee retained, new stake recorded.
+
+- **Cancel Predictions**: Verifies users can cancel predictions with 1% fee deduction (passes).
+  - User1 stakes 1000 USDC, then cancels.
+  - Receives 990 USDC refund, 10 USDC accumulated as fees.
+  
+- **Prevent Predictions After Reveal**: Ensures predictions cannot be made after voting ends and results are revealed (passes).
+  - After proposal resolution and `revealPredictionsForPayout()`, new predictions are rejected.
+
+- **Proportional Winnings**: Tests winner-takes-all distribution with correct proportional payouts (passes).
+  - User1: 1000 USDC on "Yes", User2: 2000 USDC on "No", User3: 500 USDC on "Yes".
+  - Total pool: 3500 USDC, "Yes" wins (2 votes vs 1 vote).
+  - Winning stakes: 1500 USDC (User1 + User3).
+  - User1 payout: (3500 × 1000) / 1500 = 2333.33 USDC.
+  - User3 payout: (3500 × 500) / 1500 = 1166.67 USDC.
+  - User2 (loser) gets nothing.
+
+- **Prevent Double Claiming**: Ensures users cannot claim winnings twice (passes).
+  - User1 claims winnings once successfully, second claim reverts with `AlreadyClaimed`.
+
+- **Prediction Market Info**: Tests view function for market state (passes).
+  - Returns enabled status, token address, total pool, fees, and revealed status.
+  
+- **User Prediction Info**: Tests view function for individual user state (passes).
+  - Returns prediction status, staked amount, and claim status.
+
+**Expected Behavior**: Complete prediction market lifecycle with encrypted predictions, token staking, cancellation fees (1%), off-chain tallying via `tallyPredictions()`, and proportional winner payouts from the entire pool.
+
 ## Overall Test Status
-- **All Tests Pass**: 85/85 tests passing with no failures.
-- **Coverage**: Comprehensive coverage of ENS, spaces, proposals, voting, and automation.
+- **All Tests Pass**: 93/93 tests passing with no failures.
+- **Coverage**: Comprehensive coverage of ENS, spaces, proposals, voting, automation, and prediction markets.
 
 ## Limitations and Considerations
 

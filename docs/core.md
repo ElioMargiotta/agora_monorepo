@@ -10,6 +10,7 @@ AGORA enables secure, private voting on proposals within decentralized spaces. V
 
 - **Privacy-First Voting**: FHE ensures votes are encrypted and computed without revealing individual choices.
 - **Flexible Voting Types**: Support for equal-weight, weighted single-choice, and weighted fractional voting.
+- **Prediction Markets**: Optional encrypted prediction markets where users stake tokens on voting outcomes with winner-takes-all distribution.
 - **Decentralized Spaces**: Create and manage proposal spaces with various membership types (Public, Whitelist, TokenHolder, NFTHolder).
 - **Automated Resolution**: Chainlink Automation handles timely proposal resolution and decryption.
 - **ENS Integration**: Spaces are tied to ENS names for decentralized naming.
@@ -81,6 +82,7 @@ For detailed contract architecture, FHE usage, and resolution process, see [Cont
   - **ProposalAutomation**: 0xA3ea6b9255b606Eda856eb699DD62efc72D39167
   - **PrivateProposalFactory**: 0x6f27646A29501Ee4aF0e4b6ABC2B28c71F723A1A
   - **MockGovernanceToken**: 0x24b8aE269ad0284762AfcAC32b5c1EF42875fa7D
+  - **MockUSDC**: 0xb2A0eeC6637326E2195096c9F8D03F8fA133c740
 
 ## Available Scripts
 
@@ -93,12 +95,13 @@ For detailed contract architecture, FHE usage, and resolution process, see [Cont
 
 ## Testing
 
-The core contracts include a comprehensive test suite with 85 passing tests covering all major functionality. Tests are written using Hardhat and include:
+The core contracts include a comprehensive test suite with 93 passing tests covering all major functionality. Tests are written using Hardhat and include:
 
 - **ENS Management**: MockENS subdomain creation and ownership
 - **Space Management**: Space creation, membership, and administration
 - **Proposal Factory**: Proposal creation, validation, and Chainlink Automation
 - **Voting & Resolution**: All voting types (non-weighted, weighted single-choice, weighted fractional) with FHE encryption
+- **Prediction Markets**: Encrypted prediction staking, cancellation with fees, winner payouts, and proportional distribution
 
 For detailed test results and coverage, see [Test Summary](test-summary.md).
 

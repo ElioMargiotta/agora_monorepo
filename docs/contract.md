@@ -32,7 +32,7 @@ For testing and development purposes, the system includes several mock contracts
 
 - **MockGovernanceToken**: A mock ERC20 token with voting capabilities (implements `IVotes`) for testing token-weighted voting scenarios.
 
-- **MockUSDC**: A mock stablecoin (USDC) contract for testing token-holder eligibility and payments.
+- **MockUSDC**: A mock stablecoin (USDC) contract for testing the prediction market feature. This token is used for staking predictions and is separate from the governance token used for voting power.
 
 ### FHE Usage and Input Types
 
@@ -105,5 +105,92 @@ Resolution excludes "Abstain" votes (if included as the last choice) from winnin
     ```math
     \text{passed} = \left( \frac{\text{Tally}_{\text{win}}}{\sum_{c \neq \text{abstain}} \text{Tally}_c} \times 10000 \right) > \text{passingThreshold}
     ```
+
+### Prediction Market
+
+The `PrivateProposal` contract includes an optional prediction market feature that allows users to stake tokens on their prediction of which choice will win. This creates a financial incentive layer on top of the voting mechanism, enabling speculative participation separate from actual voting.
+
+#### Prediction Market Configuration
+
+When creating a proposal, two parameters control the prediction market:
+- **`predictionMarketEnabled`**: Boolean flag to enable/disable the prediction market feature
+- **`predictionToken`**: Address of the ERC20 token to use for staking predictions (typically MockUSDC or another stablecoin)
+
+This design allows complete separation between voting eligibility and prediction staking:
+- **Public Voting + Prediction Market**: Set `eligibilityType=Public`, `predictionToken=USDC` → Anyone can vote and predict with USDC
+- **Token-Gated Voting + Prediction Market**: Set `eligibilityType=TokenHolder`, `eligibilityToken=GovernanceToken`, `predictionToken=USDC` → Only token holders can vote, but anyone can predict with USDC
+
+The prediction token is independent from the governance token, enabling flexible economic models where voting power and prediction stakes are completely decoupled.
+
+#### Prediction Mechanism
+
+Users can make encrypted predictions using the `makePrediction()` function:
+
+- **Input**: `externalEuint8 encryptedPrediction` (encrypted choice index) and `bytes inputProof`, plus `uint256 amount` (token stake).
+- **Behavior**: 
+  - Transfers `amount` tokens from the user to the contract via `IERC20.transferFrom()`.
+  - Stores the encrypted prediction using FHE (`euint8`).
+  - Records the stake amount in `predictionStakes[user]`.
+  - Updates `totalPredictionPool` to track the total staked amount.
+  - If the user had a previous prediction, it is automatically cancelled (refunded at 99% minus 1% fee).
+
+**Privacy**: Predictions remain encrypted on-chain, preventing front-running or social influence based on prediction distribution.
+
+#### Cancellation and Fees
+
+Users can cancel their prediction anytime before results are revealed via `cancelPrediction()`:
+
+- **Refund**: Returns 99% of the staked amount to the user.
+- **Fee**: Retains 1% as a cancellation fee, accumulated in `accumulatedFees`.
+- **State Update**: Resets the user's encrypted prediction to `FHE.asEuint8(0)` and clears their stake.
+
+**Auto-Cancellation**: When a user makes a new prediction, any existing prediction is automatically cancelled with the same 99% refund and 1% fee applied before the new prediction is recorded.
+
+#### Prediction Tallying and Payout
+
+After voting ends and results are revealed:
+
+1. **Reveal Trigger**: The contract owner or admin calls `revealPredictionsForPayout()` to enable claiming. This sets `predictionsRevealed = true`.
+
+2. **Tally Predictions**: Since FHE decryption on-chain is limited, the system uses off-chain decryption. The `tallyPredictions(address[] users, uint8[] predictions)` function is called with the decrypted prediction values:
+   - Iterates through provided users and their decrypted predictions.
+   - Accumulates stakes for each choice in `predictionTotalsPerChoice[choice]`.
+   - Marks users as having claimed (`predictionClaimed[user] = true`) to prepare for payout.
+
+3. **Claim Winnings**: Winners call `claimWinnings()` to receive their proportional share:
+   - Verifies the user predicted the winning choice.
+   - Calculates payout as: 
+     ```math
+     \text{payout} = \frac{\text{totalPredictionPool} \times \text{userStake}}{\text{totalWinningStakes}}
+     ```
+   - Transfers the payout via `IERC20.transfer()`.
+   - Marks the user as claimed to prevent double-claiming.
+
+**Winner-Takes-All**: The entire pool (including losers' stakes) is distributed proportionally among winners based on their stake percentages. Users who predicted incorrectly lose their entire stake.
+
+#### Security and State Management
+
+- **ReentrancyGuard**: `makePrediction()`, `cancelPrediction()`, and `claimWinnings()` are protected against reentrancy attacks.
+- **State Checks**: 
+  - Predictions are only allowed before `predictionsRevealed = true`.
+  - Claims are only allowed after predictions are revealed and tallied.
+  - Double-claiming is prevented via the `predictionClaimed` mapping.
+- **FHE Encryption**: All predictions are stored as `euint8` encrypted values, maintaining privacy until off-chain decryption.
+
+#### View Functions
+
+The contract provides two view functions for monitoring prediction market state:
+
+- **getPredictionMarketInfo()**: Returns `(bool enabled, address token, uint256 totalPool, uint256 fees, bool revealed)` with the market's configuration and current state.
+- **getUserPredictionInfo(address user)**: Returns `(bool hasMadePrediction, uint256 stakedAmount, bool hasClaimed)` for a specific user's prediction status.
+
+#### Game Theory and Economics
+
+The prediction market creates a financial layer that:
+- **Incentivizes Accuracy**: Users stake tokens on their belief about the outcome, rewarding correct predictions.
+- **Enables Speculation**: Non-voters can participate financially without voting rights.
+- **Price Discovery**: The distribution of stakes (though encrypted) can reveal market sentiment after resolution.
+- **Fee Mechanism**: The 1% cancellation fee discourages rapid strategy changes and generates protocol revenue.
+- **Risk-Reward Balance**: Winner-takes-all distribution creates high upside for correct predictions but total loss for incorrect ones.
 
 
